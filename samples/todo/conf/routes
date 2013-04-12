@@ -1,0 +1,10 @@
+GET     /                           controllers.Application.index
+
+GET     /assets/main.js             controllers.JavaScript.main
+GET     /assets/routes.js           controllers.JavaScript.routes
+
+POST    /                           controllers.Api.add
+DELETE  /:id                        controllers.Api.remove(id)
+POST    /:id                        controllers.Api.toggle(id)
+
+GET     /assets/*file               controllers.Assets.at(path="/public", file)
