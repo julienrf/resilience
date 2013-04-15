@@ -15,7 +15,8 @@ object JavaScript extends Controller {
     val jsRoutes = Routes.javascriptRouter("routes")(
       Api.add,
       Api.remove,
-      Api.toggle
+      Api.toggle,
+      Api.batch
     )
     Ok(s"define(function () { $jsRoutes; return routes });").as(JAVASCRIPT)
   }

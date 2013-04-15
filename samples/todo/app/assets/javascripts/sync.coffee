@@ -4,9 +4,8 @@ define(['events', '/assets/routes.js'], (events, routes) ->
     call: (settings) ->
       xhr = new XMLHttpRequest
       xhr.open(settings.route.method, settings.route.url)
-      data = new FormData
-      for k, v of settings.data
-        data.append(k, v)
+      xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8')
+      data = if settings.data != undefined then JSON.stringify(settings.data) else null
       xhr.send(data)
       xhr
   }
@@ -16,15 +15,27 @@ define(['events', '/assets/routes.js'], (events, routes) ->
       @queue = []
 
     apply: (event) ->
+      @push(event)
+      @sync(event)
+
+    sync: (event) ->
       ajax = (settings) =>
         xhr = Ajax.call(settings)
         xhr.addEventListener('load', () =>
-          @popUpTo(event)
+          if xhr.status >= 400
+            console.log('Error', xhr.statusText)
+          else
+            console.log('Success', xhr.statusText)
+            @popUpTo(event)
         )
         xhr.addEventListener('error', () =>
-          console.log('Oops.')
+          console.log('The connection to the service has been lost.')
         )
-      @push(event)
+      ajax({
+        route: routes.controllers.Api.batch(),
+        data: @queue
+      })
+      ###
       event.accept({
         toggled: (itemId) ->
           ajax({
@@ -46,6 +57,7 @@ define(['events', '/assets/routes.js'], (events, routes) ->
             route: routes.controllers.Api.remove(itemId)
           })
       })
+      ###
 
     popUpTo: (event) ->
       removed = @queue.shift()

@@ -1,13 +1,14 @@
 package business
 
 import scala.concurrent.stm.Ref
-import java.util.UUID
+import play.api.Logger
 
 class State(interpreter: Interpreter, initVal: Items) {
 
   private val todos = Ref(initVal)
 
   def apply(event: Event) {
+    Logger.debug(event.toString)
     todos.single.transform(interpreter(event))
   }
 
@@ -15,9 +16,4 @@ class State(interpreter: Interpreter, initVal: Items) {
 }
 
 // In-memory application state
-object State extends State(
-  new Interpreter,
-  new Items(List(
-    Item(UUID.randomUUID().toString, "foo", done = false),
-    Item(UUID.randomUUID().toString, "bar", done = true)))
-)
+object State extends State(new Interpreter, new Items(Nil))
