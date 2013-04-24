@@ -109,12 +109,12 @@ define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
       @ui.updateSync(@queue)
 
   # Interprete domain event as state transitions
-  # TODO abstract over the factory
-  class Interpreter
+  class Interpreter extends Sync
 
     constructor: (@items) ->
+      super()
 
-    apply: ((event) -> event.accept(this))
+    interprete: ((event) -> event.accept(this))
 
     toggled: (itemId) ->
       # TODO handle find failure
@@ -130,13 +130,7 @@ define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
   # Entry point
   class App
     constructor: (data) ->
-      business = new Interpreter(() => @items)
-      sync = new Sync
-      interpreter = { # TODO interpreter combinator
-        apply: (event) ->
-          sync.apply(event)
-          business.apply(event)
-      }
+      interpreter = new Interpreter(() => @items)
       items = data.map((item) => new Item((() => @items), interpreter, item.id, item.content, item.done, true))
       @items = new Items(interpreter, items)
       @ui = @items.ui

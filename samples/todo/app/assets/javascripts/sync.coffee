@@ -10,6 +10,7 @@ define(['events', '/assets/routes.js'], (events, routes) ->
       xhr
   }
 
+  # Method `interprete :: Event -> ()` is abstract and must be implemented to interprete the event in terms of business logic
   class Interpreter
     constructor: () ->
       @queue = []
@@ -17,6 +18,7 @@ define(['events', '/assets/routes.js'], (events, routes) ->
     apply: (event) ->
       @push(event)
       @sync(event)
+      @interprete(event)
 
     sync: (event) ->
       ajax = (settings) =>
