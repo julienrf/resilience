@@ -121,7 +121,7 @@ define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
       @items().find(itemId).forEach((item) -> item.toggle())
 
     added: (itemId, content, done) ->
-      @items().add(new Item((() => @items()), this, itemId, content, done, @items().currentFilter != 'completed'))
+      @items().add(new Item(@items, this, itemId, content, done, @items().currentFilter != 'completed'))
 
     removed: (itemId) ->
       @items().find(itemId).forEach((item) => @items().remove(item))
