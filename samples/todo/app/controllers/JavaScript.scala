@@ -16,7 +16,7 @@ object JavaScript extends Controller {
       Api.add,
       Api.remove,
       Api.toggle,
-      Api.batch
+      Api.sync
     )
     Ok(s"define(function () { $jsRoutes; return routes });").as(JAVASCRIPT)
   }

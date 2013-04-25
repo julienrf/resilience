@@ -1,4 +1,4 @@
-define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
+define(['business', 'ui', 'events', 'sync', '/assets/routes.js'], (business, ui, events, sync, routes) ->
 
   class Item extends business.Item
     constructor: (@parent, @interpreter, id, name, done, visible) ->
@@ -26,7 +26,7 @@ define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
       super(items)
       @currentFilter = 'all'
       @filter = new Filter
-      @ui = new ui.Items(this, @filter.ui, item.ui for item in items)
+      @ui = new ui.Items(this, @filter.ui, item.ui for item in items, @interpreter.ui)
       @updateItems()
 
     add: (item) ->
@@ -98,21 +98,25 @@ define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
 
 
   class Sync extends sync.Sync
-    constructor: () ->
-      super()
+    constructor: (route) ->
+      super(route)
       @ui = new ui.Sync()
-    push: (event) ->
-      super(event)
-      @ui.updateSync(@queue)
+    sync: () ->
+      if @queue.length > 0
+        @ui.updateStatus(ui.Sync.Pending)
+      super()
     popUpTo: (event) ->
       super(event)
-      @ui.updateSync(@queue)
+      @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
+    connectionLost: () ->
+      @ui.updateStatus(ui.Sync.NoConnection)
+      super()
 
   # Interprete domain event as state transitions
   class Interpreter extends Sync
 
-    constructor: (@items) ->
-      super()
+    constructor: (@items, route) ->
+      super(route)
 
     interprete: ((event) -> event.accept(this))
 
@@ -130,7 +134,7 @@ define(['business', 'ui', 'events', 'sync'], (business, ui, events, sync) ->
   # Entry point
   class App
     constructor: (data) ->
-      interpreter = new Interpreter(() => @items)
+      interpreter = new Interpreter((() => @items), routes.controllers.Api.sync())
       items = data.map((item) => new Item((() => @items), interpreter, item.id, item.content, item.done, true))
       @items = new Items(interpreter, items)
       @ui = @items.ui

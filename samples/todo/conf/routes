@@ -3,7 +3,7 @@ GET     /                           controllers.Application.index
 GET     /assets/main.js             controllers.JavaScript.main
 GET     /assets/routes.js           controllers.JavaScript.routes
 
-POST    /batch                      controllers.Api.batch
+POST    /sync                       controllers.Api.sync
 POST    /                           controllers.Api.add
 DELETE  /:id                        controllers.Api.remove(id)
 POST    /:id                        controllers.Api.toggle(id)

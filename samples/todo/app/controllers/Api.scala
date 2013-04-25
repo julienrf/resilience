@@ -38,7 +38,7 @@ object Api extends Controller {
   /**
    * Apply a batch of domain events to the application state.
    */
-  val batch = Action(parse.json) { implicit request =>
+  val sync = Action(parse.json) { implicit request =>
     val eventsApplied =
       for (events <- request.body.validate[Seq[Event]]) yield {
         events.foreach(State.apply)

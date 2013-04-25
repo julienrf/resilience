@@ -63,7 +63,7 @@ define(['el'], (el) ->
 
 
   class Items
-    constructor: (@ctl, filter, items) ->
+    constructor: (@ctl, filter, items, sync) ->
       @toggleAll = el('input', { id: 'toggle-all', type: 'checkbox' })()
       @items = el('ul', { id: 'todo-list' })(item.root for item in items)
       @main = el('section', { id: 'main' })(
@@ -85,7 +85,8 @@ define(['el'], (el) ->
           @input
         ),
         @main,
-        @footer
+        @footer,
+        sync.root
       )
 
       @input.addEventListener('keydown', (e) =>
@@ -128,11 +129,18 @@ define(['el'], (el) ->
       @footer.style.display = 'block'
 
   class Sync
-    updateSync: (queue) ->
-      if queue.length == 0
-        console.log('Everything is synced!')
-      else
-        console.log(queue.length + ' events have to be synced')
+    constructor: () ->
+      @status = el('div', { 'class': 'synced' })()
+      @root = el('div', { 'class': 'sync-status' })(@status)
+    updateStatus: (status) ->
+      switch status
+        when Sync.NoConnection then @status.className = 'no-connection'
+        when Sync.Synced then @status.className = 'synced'
+        when Sync.Pending then @status.className = 'pending'
+
+  Sync.NoConnection = 0
+  Sync.Synced = 1
+  Sync.Pending = 2
 
   {
     Item: Item,
