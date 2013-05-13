@@ -1,4 +1,4 @@
-define(['business', 'ui', 'events', 'sync', '/assets/routes.js'], (business, ui, events, sync, routes) ->
+define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui, events, sync, routes) ->
 
   class Item extends business.Item
     constructor: (@parent, @interpreter, id, name, done, visible) ->
@@ -105,7 +105,7 @@ define(['business', 'ui', 'events', 'sync', '/assets/routes.js'], (business, ui,
       if @queue.length > 0
         @ui.updateStatus(ui.Sync.Pending)
       super()
-    popUpTo: (event) ->
+    remove: (event) ->
       super(event)
       @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
     connectionLost: () ->
@@ -118,23 +118,24 @@ define(['business', 'ui', 'events', 'sync', '/assets/routes.js'], (business, ui,
     constructor: (@items, route) ->
       super(route)
 
-    interprete: ((event) -> event.accept(this))
+    interprete: ((event) -> events.fold(event)(
+      Toggled: (itemId) =>
+        # TODO handle find failure
+        @items().find(itemId).forEach((item) -> item.toggle())
 
-    toggled: (itemId) ->
-      # TODO handle find failure
-      @items().find(itemId).forEach((item) -> item.toggle())
+      Added: (itemId, content, done) =>
+        @items().add(new Item(@items, this, itemId, content, done, @items().currentFilter != 'completed'))
 
-    added: (itemId, content, done) ->
-      @items().add(new Item(@items, this, itemId, content, done, @items().currentFilter != 'completed'))
+      Removed: (itemId) =>
+        @items().find(itemId).forEach((item) => @items().remove(item))
 
-    removed: (itemId) ->
-      @items().find(itemId).forEach((item) => @items().remove(item))
+    ))
 
 
   # Entry point
   class App
     constructor: (data) ->
-      interpreter = new Interpreter((() => @items), routes.controllers.Api.sync())
+      interpreter = new Interpreter((() => @items), routes.controllers.Api.sync2())
       items = data.map((item) => new Item((() => @items), interpreter, item.id, item.content, item.done, true))
       @items = new Items(interpreter, items)
       @ui = @items.ui

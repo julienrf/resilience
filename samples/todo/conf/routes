@@ -4,8 +4,9 @@ GET     /assets/main.js             controllers.JavaScript.main
 GET     /assets/routes.js           controllers.JavaScript.routes
 
 POST    /sync                       controllers.Api.sync
-POST    /                           controllers.Api.add
-DELETE  /:id                        controllers.Api.remove(id)
-POST    /:id                        controllers.Api.toggle(id)
+GET     /sync-2                     controllers.Api.sync2
+# POST    /                           controllers.Api.add
+# DELETE  /:id                        controllers.Api.remove(id)
+# POST    /:id                        controllers.Api.toggle(id)
 
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

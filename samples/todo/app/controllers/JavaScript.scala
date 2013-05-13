@@ -13,10 +13,11 @@ object JavaScript extends Controller {
   val routes = Action { implicit request =>
     import controllers.routes.javascript.Api
     val jsRoutes = Routes.javascriptRouter("routes")(
-      Api.add,
-      Api.remove,
-      Api.toggle,
-      Api.sync
+      // Api.add,
+      // Api.remove,
+      // Api.toggle,
+      Api.sync,
+      Api.sync2
     )
     Ok(s"define(function () { $jsRoutes; return routes });").as(JAVASCRIPT)
   }

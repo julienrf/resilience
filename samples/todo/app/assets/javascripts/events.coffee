@@ -1,26 +1,29 @@
 define(['lib/uuid'], (uuid) ->
 
-  class Toggled
-    constructor: (@itemId) ->
-      @tag = "Toggled"
-    accept: (visitor) -> visitor.toggled(@itemId)
-
-  class Added
-    constructor: (@itemId, @content, @done) ->
-      @tag = "Added"
-    accept: (visitor) -> visitor.added(@itemId, @content, @done)
-
-  class Removed
-    constructor: (@itemId) ->
-      @tag = "Removed"
-    accept: (visitor) -> visitor.removed(@itemId)
-
   {
-    Toggled: Toggled,
-    Added: Added,
-    Removed: Removed,
-    toggle: ((id) -> new Toggled(id)),
-    add: ((content, done) -> new Added(uuid(), content, done)),
-    remove: ((id) -> new Removed(id))
+    toggle: ((id) ->
+      tag: 'Toggled'
+      id: uuid()
+      itemId: id
+    )
+    add: ((content, done) ->
+      tag: 'Added'
+      id: uuid()
+      itemId: uuid()
+      content: content
+      done: done
+    )
+    remove: ((id) ->
+      tag: 'Removed'
+      id: uuid()
+      itemId: id
+    )
+    fold: (event) -> (f) ->
+      if event.tag == 'Toggled'
+        f.Toggled(event.itemId)
+      else if event.tag == 'Added'
+        f.Added(event.itemId, event.content, event.done)
+      else if event.tag == 'Removed'
+        f.Removed(event.itemId)
   }
 )
