@@ -17,7 +17,7 @@ define(() ->
           else
             @interprete(event)
       )
-      ws.addEventListener('open', () -> console.log('open', arguments)) # TODO Handle opening (do not try to send something before it is open, and then automatically sync when it is open)
+      ws.addEventListener('open', () => console.log('open', arguments); @connectionRecovered())
       ws.addEventListener('error', () => console.log('error', arguments); @connectionLost()) # TODO Handle errors
       ws.addEventListener('close', () => console.log('close', arguments); @connectionLost()) # TODO?
       ws
@@ -28,7 +28,7 @@ define(() ->
       @interprete(event)
 
     sync: () ->
-      if @queue.length > 0 and @ws
+      if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
         @ws.send(JSON.stringify(@queue))
 
     remove: (event) ->
@@ -45,6 +45,10 @@ define(() ->
           delete @timeout
           @ws = @makeWS(@syncRoute.webSocketURL())
         , @timeout)
+
+    connectionRecovered: () ->
+      @sync()
+
 
 
   {

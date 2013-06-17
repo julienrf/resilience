@@ -102,7 +102,7 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
       super(route)
       @ui = new ui.Sync()
     sync: () ->
-      if @queue.length > 0
+      if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
         @ui.updateStatus(ui.Sync.Pending)
       super()
     remove: (event) ->
@@ -110,6 +110,9 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
       @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
     connectionLost: () ->
       @ui.updateStatus(ui.Sync.NoConnection)
+      super()
+    connectionRecovered: () ->
+      @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
       super()
 
   # Interprete domain event as state transitions
