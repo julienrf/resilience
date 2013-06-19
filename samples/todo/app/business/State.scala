@@ -15,5 +15,4 @@ class State(interpreter: Interpreter, initVal: Items) {
   def current: Items = todos.single()
 }
 
-// In-memory application state
 object State extends State(new Interpreter, new Items(Nil))

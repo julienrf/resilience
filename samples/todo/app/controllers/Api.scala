@@ -54,9 +54,8 @@ object Api extends Controller {
   /**
    * A websocket entry point to apply batches of events and receive notifications from other clients actions
    */
-  val sync2 = WebSocket.async[JsValue] { _ =>
-    for ((interpreter, notifications) <- Sync.join)
-    yield (Json.fromJson[Seq[Event]] &>> interpreter, notifications &> Json.toJson[Seq[Event]])
+  val sync2 = WebSocket.using[JsValue] { _ =>
+    (Json.fromJson[Seq[Event]] &>> Sync.interpreter, Sync.notifications &> Json.toJson[Seq[Event]])
   }
 
 }

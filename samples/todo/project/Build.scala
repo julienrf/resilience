@@ -10,7 +10,9 @@ object ApplicationBuild extends Build {
   val main = play.Project(appName, appVersion).settings(
     templatesTypes <<= (templatesTypes) (_ orElse {
       case "js" => ("templates.JavaScript", "templates.JavaScriptFormat")
-    })
+    }),
+    libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.9",
+    scalacOptions ++= Seq("-Xlint", "-feature")
   )
 
 }

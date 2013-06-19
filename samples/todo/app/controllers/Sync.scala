@@ -1,12 +1,13 @@
 package controllers
 
-import akka.actor.{Props, Actor}
-import play.api.libs.iteratee.{Enumerator, Iteratee, Concurrent}
+import play.api.libs.iteratee.{Iteratee, Concurrent}
 import business.{State, Event}
-import play.api.libs.concurrent.Akka
-import scala.concurrent.Future
-import akka.util.Timeout
-import java.util.concurrent.TimeUnit
+import play.modules.reactivemongo.ReactiveMongoPlugin
+import play.api.libs.json.{JsObject, Writes, Reads, Json}
+import scala.concurrent.ExecutionContext
+import play.modules.reactivemongo.json.collection.JSONCollection
+import scala.concurrent.stm.Ref
+import play.api.Logger
 
 trait Sync {
 
@@ -15,45 +16,46 @@ trait Sync {
   // Domain interpretation of events
   def interprete(events: Events)
 
-  class SyncActor extends Actor {
+  protected def journalCollection: JSONCollection
+  protected implicit def executionContext: ExecutionContext
+  protected implicit def eventsRead: Reads[Events]
+  protected implicit def eventsWrite: Writes[Events]
 
-    val (notifications, channel) = Concurrent.broadcast[Events]
+  val (notifications, channel) = Concurrent.broadcast[Events]
+  // We will interprete his actions using this iteratee
+  val interpreter = Iteratee.foreach[Events] { apply(_) }
+  private val id = Ref(0)
 
-    // A batch of events has to be applied
-    def apply(events: Events) {
-      interprete(events)
-      // Notify each client of the applied actions
-      channel.push(events)
-    }
-
-    def receive = {
-      // A new client joins
-      case Sync.Join() =>
-        // We will interprete his actions using this iteratee
-        val interpreter = Iteratee.foreach[Events] { apply(_) }
-        // Send back the interpreter and the event notification stream
-        sender ! (interpreter, notifications)
-
-    }
-
+  // A batch of events has to be applied
+  def apply(events: Events): Unit = {
+    journalCollection
+      .save(Json.obj("id" -> id.single.getAndTransform(_ + 1), "data" -> Json.toJson(events)))
+      .filter(_.ok)
+      .onFailure { case error => Logger.debug(s"There was a problem: $error") }
+    interprete(events)
+    // Notify each client of the applied actions
+    channel.push(events)
   }
+
+  // Recover state
+  for {
+    eventsList <- journalCollection.find(Json.obj()).sort(Json.obj("id" -> 1)).cursor[JsObject].toList
+    entry <- eventsList
+    events <- (entry \ "data").validate[Events]
+  } interprete(events)
 
 }
 
 object Sync extends Sync {
 
-  case class Join()
-
   // TODO Find a better place for the following code
   import play.api.Play.current
-  import akka.pattern.ask
+  import JsonProtocols.{readEvent, writeEvent}
+  lazy val executionContext = play.api.libs.concurrent.Execution.defaultContext
+  lazy val eventsRead = Reads.seq[Event]
+  lazy val eventsWrite = Writes.seq[Event]
 
-  private val sync = Akka.system.actorOf(Props(new SyncActor))
-
-  implicit val timeout = Timeout(1, TimeUnit.SECONDS)
-
-  def join: Future[(Iteratee[Events, _], Enumerator[Events])] =
-    (sync ? Join()).mapTo[(Iteratee[Events, _], Enumerator[Events])]
+  lazy val journalCollection = ReactiveMongoPlugin.db.collection[JSONCollection]("resilience_todo")
 
   type Events = Seq[Event]
 
