@@ -20,19 +20,19 @@ object Api extends Controller {
     )).bindFromRequest().fold(
       _ => BadRequest,
       { case (id, itemId, content, done) =>
-        State.apply(Added(id, itemId, content, done))
+        Todo.state.exec(Added(id, itemId, content, done))
         Ok
       }
     )
   }
 
   def remove(id: String, itemId: String) = Action { implicit request =>
-    State.apply(Removed(id, itemId))
+    Todo.state.exec(Removed(id, itemId))
     Ok
   }
 
   def toggle(id: String, itemId: String) = Action { implicit request =>
-    State.apply(Toggled(id, itemId))
+    Todo.state.exec(Toggled(id, itemId))
     Ok
   }
 
@@ -42,7 +42,7 @@ object Api extends Controller {
   val sync = Action(parse.json) { implicit request =>
     val eventsApplied =
       for (events <- request.body.validate[Seq[Event]]) yield {
-        events.foreach(State.apply)
+        events.foreach(Todo.state.exec)
         Ok
       }
     eventsApplied recoverTotal { _ =>
@@ -55,7 +55,7 @@ object Api extends Controller {
    * A websocket entry point to apply batches of events and receive notifications from other clients actions
    */
   val sync2 = WebSocket.using[JsValue] { _ =>
-    (Json.fromJson[Seq[Event]] &>> Sync.interpreter, Sync.notifications &> Json.toJson[Seq[Event]])
+    (Json.fromJson[Seq[Event]] &>> Todo.sync.commands, Todo.sync.notifications &> Json.toJson[Seq[Event]])
   }
 
 }
