@@ -37,11 +37,11 @@ trait Sync {
     // Applies a batch of events
     private def apply(events: Seq[Event]): Unit = events match {
       case event +: events =>
-        Logger.debug(s"""findAnModify({ "query": { event.id: "${event.id}" }, "update": {${Json.toJson(event)} })""")
+        //Logger.debug(s"""findAnModify({ "query": { event.id: "${event.id}" }, "update": {${Json.toJson(event)} })""")
         journalCollection.db.command(FindAndModify(
           journalCollection.name,
           query = implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("event.id" -> event.id)),
-          modify = Update(implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("time" -> time.single.getAndTransform(_ + 1), "event" -> Json.toJson(event))), fetchNewObject = false),
+          modify = Update(implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("time" -> time.single.transformAndGet(_ + 1), "event" -> Json.toJson(event))), fetchNewObject = false),
           upsert = true
         )).map { maybeOldEntry =>
             maybeOldEntry match {
