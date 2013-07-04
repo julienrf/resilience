@@ -1,6 +1,6 @@
 package julienrf.resilience
 
-import play.api.libs.iteratee.{Iteratee, Concurrent}
+import play.api.libs.iteratee.{Enumerator, Iteratee, Concurrent}
 import play.api.libs.json.{JsObject, Writes, Reads, Json}
 import play.api.Logger
 import reactivemongo.core.commands.{Update, FindAndModify}
@@ -34,32 +34,28 @@ trait Sync {
     private val (_notifications, channel) = Concurrent.broadcast[Seq[Event]]
     private val time = Ref(0)
 
-    // Applies a batch of events
-    private def apply(events: Seq[Event]): Unit = events match {
-      case event +: events =>
-        //Logger.debug(s"""findAnModify({ "query": { event.id: "${event.id}" }, "update": {${Json.toJson(event)} })""")
-        journalCollection.db.command(FindAndModify(
-          journalCollection.name,
-          query = implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("event.id" -> event.id)),
-          modify = Update(implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("time" -> time.single.transformAndGet(_ + 1), "event" -> Json.toJson(event))), fetchNewObject = false),
-          upsert = true
-        )).map { maybeOldEntry =>
-            maybeOldEntry match {
-              case Some(oldEntry) =>
-                if (oldEntry.isEmpty) {
-                  // Apply the event to the application’s state
-                  interprete(event)
-                  // Notify each client of the applied actions
-                  channel.push(Seq(event))
-                }
-              case None => Logger.debug("Problem?")
-            }
+    // Atomically apply an event (two events can not be applied concurrently, they are totally ordered)
+    private val atomicallyApply = Iteratee.foldM(()){ (_, event: Event) =>
+    //Logger.debug(s"""findAnModify({ "query": { event.id: "${event.id}" }, "update": {${Json.toJson(event)} })""")
+      journalCollection.db.command(FindAndModify(
+        journalCollection.name,
+        query = implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("event.id" -> event.id)),
+        modify = Update(implicitly[BSONDocumentWriter[JsObject]].write(Json.obj("time" -> time.single.transformAndGet(_ + 1), "event" -> Json.toJson(event))), fetchNewObject = false),
+        upsert = true
+      )).transform(_ match {
+        case Some(oldEntry) =>
+          if (oldEntry.isEmpty) {
+            // Apply the event to the application’s state
+            interprete(event)
+            // Notify each client of the applied actions
+            channel.push(Seq(event))
           }
-          .onFailure {
-            case error => Logger.debug(s"There was a problem: $error")
-          }
-        apply(events)
-      case _ =>
+        case None => Logger.debug("Problem?")
+      }, error => {
+        Logger.debug(s"There was a problem: $error")
+        error
+      }
+      )
     }
 
     // Recover state
@@ -78,7 +74,7 @@ trait Sync {
     // Output stream of events
     val notifications = _notifications
     // We receive commands through this iteratee
-    val commands = Iteratee.foreach(apply)
+    val commands = Iteratee.foreach[Seq[Event]](events => Enumerator(events: _*) |>> atomicallyApply)
   }
 
 }
