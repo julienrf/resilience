@@ -17,7 +17,8 @@
             <p>By <a href="http://github.com/julienrf"> Julien Richard-Foy </a></p>
             <p>Part of <a href="http://todomvc.com"> TodoMVC </a></p>
         </footer>
-        <script type="text/javascript" src="@routes.Assets.at("javascripts/require.js")" data-main="@routes.Assets.at("javascripts/init")"></script>
+        <!-- <script src="@routes.Assets.at("javascripts/base.js")"></script> -->
+        @helper.requireJs(routes.Assets.at("javascripts/init").url, routes.Assets.at("javascripts/require.js").url)
         <script type="text/javascript" src="@routes.JavaScript.main()"></script>
     </body>
 </html>

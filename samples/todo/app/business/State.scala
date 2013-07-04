@@ -15,7 +15,7 @@ trait State extends Interpreter {
     private val todos = Ref(initVal)
 
     def exec(event: Event) {
-      //Logger.debug(event.toString)
+      Logger.debug(event.toString)
       todos.single.transform(interpreter(event))
     }
 
