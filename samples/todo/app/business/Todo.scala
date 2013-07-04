@@ -14,10 +14,10 @@ object Todo extends State with Sync {
     type Event = business.Event
 
     // JSON serialization configuration and MongoDB collection
-    val executionContext = play.api.libs.concurrent.Execution.defaultContext
-    val eventsRead = JsonProtocols.readEvent
-    val eventsWrite = JsonProtocols.writeEvent
-    val journalCollection = ReactiveMongoPlugin.db(play.api.Play.current).collection[JSONCollection]("resilience_todo")
+    lazy val executionContext = play.api.libs.concurrent.Execution.defaultContext
+    lazy val eventsRead = JsonProtocols.readEvent
+    lazy val eventsWrite = JsonProtocols.writeEvent
+    lazy val journalCollection = ReactiveMongoPlugin.db(play.api.Play.current).collection[JSONCollection]("resilience_todo")
 
     // Domain interpretation of events
     def interprete(event: Event): Unit = {
@@ -25,7 +25,5 @@ object Todo extends State with Sync {
       state.exec(event)
     }
   }
-
-  sync.recover()
 
 }

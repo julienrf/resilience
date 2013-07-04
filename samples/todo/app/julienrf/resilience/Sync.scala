@@ -58,23 +58,21 @@ trait Sync {
       )
     }
 
-    // Recover state
-    def recover(): Future[Unit] =
-      for (eventsList <- journalCollection.find(Json.obj()).sort(Json.obj("time" -> 1)).cursor[JsObject].toList) yield {
-        for {
-          entry <- eventsList
-          last <- eventsList.map(entry => (entry \ "time").asOpt[Int]).max
-          event <- (entry \ "event").validate[Event]
-        } {
-          interprete(event)
-          time.single.set(last)
-        }
-      }
-
     // Output stream of events
     val notifications = _notifications
     // We receive commands through this iteratee
     val commands = Iteratee.foreach[Seq[Event]](events => Enumerator(events: _*) |>> atomicallyApply)
-  }
 
+    // Recover state
+    for (eventsList <- journalCollection.find(Json.obj()).sort(Json.obj("time" -> 1)).cursor[JsObject].toList) {
+      for {
+        entry <- eventsList
+        last <- eventsList.map(entry => (entry \ "time").asOpt[Int]).max
+        event <- (entry \ "event").validate[Event]
+      } {
+        interprete(event)
+        time.single.set(last)
+      }
+    }
+  }
 }
