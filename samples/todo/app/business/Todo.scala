@@ -1,29 +1,21 @@
 package business
 
 import play.api.libs.json.{Writes, Reads}
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.modules.reactivemongo.ReactiveMongoPlugin
 import play.modules.reactivemongo.json.collection.JSONCollection
 import julienrf.resilience.Sync
+import julienrf.resilience.log.MongoDBLog
+import scala.concurrent.Future
 
-object Todo extends State with Sync {
+object Todo extends State with Sync with MongoDBLog with JsonProtocols {
+
+  import protocols.{readEvent, writeEvent}
 
   val state = new State(new Items(Nil))
 
-  val sync = new Sync {
-    // Events are just a Seq of domain Event
-    type Event = business.Event
+  val log = new MongoDBLog(ReactiveMongoPlugin.db(play.api.Play.current).collection[JSONCollection]("resilience_todo"))
 
-    // JSON serialization configuration and MongoDB collection
-    lazy val executionContext = play.api.libs.concurrent.Execution.defaultContext
-    lazy val eventsRead = JsonProtocols.readEvent
-    lazy val eventsWrite = JsonProtocols.writeEvent
-    lazy val journalCollection = ReactiveMongoPlugin.db(play.api.Play.current).collection[JSONCollection]("resilience_todo")
-
-    // Domain interpretation of events
-    def interprete(event: Event): Unit = {
-      // Apply each event
-      state.exec(event)
-    }
-  }
+  val sync = new Sync(event => Future.successful(state.exec(event)))
 
 }

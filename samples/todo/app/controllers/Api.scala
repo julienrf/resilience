@@ -5,11 +5,14 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json.{Json, JsValue}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import business._
-import JsonProtocols._
 import play.api.Logger
 
+import business.Todo
+
 object Api extends Controller {
+
+  import Todo.{Added, Removed, Toggled, Event}
+  import Todo.protocols._
 
   val add = Action { implicit request =>
     Form(tuple(

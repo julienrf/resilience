@@ -1,6 +1,6 @@
 @(state: business.Items)
 
-@import business.JsonProtocols._
+@import business.Todo.protocols._
 
 require(['control'], function (ctl) {
 

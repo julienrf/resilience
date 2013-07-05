@@ -5,7 +5,7 @@ import play.api.Logger
 /**
  * Application of the domain events
  */
-trait Interpreter {
+trait Interpreter extends Events {
 
   object interpreter {
     /**
