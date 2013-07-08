@@ -101,10 +101,10 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
     constructor: (route) ->
       super(route)
       @ui = new ui.Sync(this)
-    sync: () ->
+    sync: (optimistic) ->
       if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
         @ui.updateStatus(ui.Sync.Pending)
-      super()
+      super(optimistic)
     remove: (event) ->
       super(event)
       @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)

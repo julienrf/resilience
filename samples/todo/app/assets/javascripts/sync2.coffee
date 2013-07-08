@@ -24,12 +24,12 @@ define(() ->
 
     apply: (event) ->
       @push(event)
-      @sync() # We try to sync on each user action. TODO sync only if the server is not under a heavy load
+      @sync(true) # We try to sync on each user action. TODO sync only if the server is not under a heavy load
       @interprete(event)
 
-    sync: () ->
+    sync: (optimistic) ->
       if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
-        @ws.send(JSON.stringify(@queue))
+        @ws.send(JSON.stringify(if optimistic then [@queue[@queue.length - 1]] else @queue))
 
     remove: (event) ->
       @queue = @queue.filter((e) -> e.id != event.id)
