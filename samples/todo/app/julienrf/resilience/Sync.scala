@@ -25,8 +25,8 @@ trait Sync extends Event with Log {
     private val atomicallyApply = Iteratee.foldM(()) { (_, event: Event) =>
       for {
         // Check that the event has not already been applied
-        exists <- log.exists(event)
-        if !exists
+        alreadyApplied <- log.exists(event)
+        if !alreadyApplied
         // Apply the event to the application’s state
         _ <- interprete(event)
         // Append it to the log
@@ -42,8 +42,8 @@ trait Sync extends Event with Log {
     // Recover state. HACK Should be synchronous
     for {
       events <- log.history()
-      event <- events
-    } interprete(event)
+      _ <- events.foldLeft(Future.successful(()))((f, event) => f.flatMap(_ => interprete(event)))
+    } yield ()
 
   }
 
