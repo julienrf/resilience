@@ -129,9 +129,10 @@ define(['el'], (el) ->
       @footer.style.display = 'block'
 
   class Sync
-    constructor: () ->
+    constructor: (@ctl) ->
       @status = el('div', { 'class': 'synced' })()
       @root = el('div', { 'class': 'sync-status' })(@status)
+      window.addEventListener('beforeunload', (e) -> ctl.beforeUnload(e))
     updateStatus: (status) ->
       switch status
         when Sync.NoConnection then @status.className = 'no-connection'

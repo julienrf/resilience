@@ -100,7 +100,7 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
   class Sync extends sync.Sync
     constructor: (route) ->
       super(route)
-      @ui = new ui.Sync()
+      @ui = new ui.Sync(this)
     sync: () ->
       if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
         @ui.updateStatus(ui.Sync.Pending)
@@ -114,6 +114,11 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
     connectionRecovered: () ->
       @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
       super()
+    beforeUnload: (e) ->
+      if @queue.length > 0
+        confirmation = 'You have unsaved changes.'
+        (e || window.event).returnValue = confirmation
+        confirmation
 
   # Interprete domain event as state transitions
   class Interpreter extends Sync

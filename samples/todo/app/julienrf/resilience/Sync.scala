@@ -29,10 +29,10 @@ trait Sync extends Event with Log {
         if !alreadyApplied
         // Apply the event to the application’s state
         _ <- interprete(event)
-        // Append it to the log
-        _ <- log.append(event)
         // Notify each client
         _ = channel.push(Seq(event))
+        // Append it to the log
+        _ <- log.append(event)
       } yield ()
     }
 
