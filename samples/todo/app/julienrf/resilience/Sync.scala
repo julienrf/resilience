@@ -1,6 +1,6 @@
 package julienrf.resilience
 
-import play.api.libs.iteratee.{Enumerator, Iteratee, Concurrent}
+import play.api.libs.iteratee.{Enumeratee, Enumerator, Iteratee, Concurrent}
 import play.api.Logger
 import scala.concurrent.{ExecutionContext, Future}
 import julienrf.resilience.log.Log
@@ -37,7 +37,7 @@ trait Sync extends Event with Log {
     }
 
     // We receive commands through this iteratee
-    val commands = Iteratee.foreach[Seq[Event]](events => Enumerator(events: _*) |>> atomicallyApply)
+    val commands: Iteratee[Seq[Event], Unit] = Enumeratee.mapFlatten[Seq[Event]](Enumerator(_: _*)) &>> atomicallyApply
 
     // Recover state. HACK Should be synchronous
     for {
