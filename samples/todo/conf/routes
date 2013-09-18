@@ -1,12 +1,13 @@
-GET     /                           controllers.Application.index
+GET         /                                    controllers.Application.index
+GET         /todo.appcache                       controllers.Application.cacheManifest
 
-GET     /assets/main.js             controllers.JavaScript.main
-GET     /assets/routes.js           controllers.JavaScript.routes
+GET         /assets/javascripts/routes.js        controllers.JavaScript.routes
 
-POST    /sync                       controllers.Api.sync
-GET     /sync-2                     controllers.Api.sync2
+POST        /sync                                controllers.Api.sync
+GET         /sync-2                              controllers.Api.sync2
+GET         /history                             controllers.Api.history(last: Option[Double])
 # POST    /                           controllers.Api.add
 # DELETE  /:id                        controllers.Api.remove(id)
 # POST    /:id                        controllers.Api.toggle(id)
 
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET         /assets/*file                        controllers.Assets.at(path="/public", file)

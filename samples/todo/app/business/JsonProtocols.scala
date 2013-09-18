@@ -8,6 +8,8 @@ trait JsonProtocols extends Events {
 
   object protocols {
 
+    implicit def writeTuple2[A : Writes, B : Writes] = Writes[(A, B)] ( o =>  Json.arr(o._1, o._2) )
+
     implicit val writeItem = Writes[Item] { item =>
       Json.obj(
         "id" -> item.id,

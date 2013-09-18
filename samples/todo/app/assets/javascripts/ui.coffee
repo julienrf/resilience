@@ -1,4 +1,4 @@
-define(['el'], (el) ->
+define(['lib/el'], (el) ->
 
   class Item
     constructor: (@ctl, name, done, visible) ->

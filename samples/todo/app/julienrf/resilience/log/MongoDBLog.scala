@@ -20,20 +20,26 @@ trait MongoDBLog extends Log with Event {
         maybeEvent <- collection.find(Json.obj("event.id" -> event.id)).one
       } yield maybeEvent.isDefined
 
-    def append(event: Event): Future[Unit] =
+    def append(event: Event): Future[Double] =
       for {
         maybeLastEvent <- collection.find(Json.obj()).sort(Json.obj("time" -> -1)).one[JsObject]
         time = maybeLastEvent flatMap (lastEvent => (lastEvent \ "time").asOpt[Double] map (_ + 1)) getOrElse 0.0
         _ <- collection.save(Json.obj("time" -> time, "event" -> Json.toJson(event)))
-      } yield ()
+      } yield time
 
-    def history(): Future[Seq[Event]] =
-      for (eventsList <- collection.find(Json.obj()).sort(Json.obj("time" -> 1)).cursor[JsObject].toList) yield {
+    def history(since: Option[Double] = None): Future[Seq[(Double, Event)]] = {
+      val request = since match {
+        case Some(timestamp) => Json.obj("time" -> Json.obj("$gt" -> since))
+        case None => Json.obj()
+      }
+      for (eventsList <- collection.find(request).sort(Json.obj("time" -> 1)).cursor[JsObject].toList) yield {
         for {
           entry <- eventsList
-          event <- (entry \ "event").validate[Event].asOpt
-        } yield event
+          time <- (entry \ "time").asOpt[Double]
+          event <- (entry \ "event").asOpt[Event]
+        } yield time -> event
       }
+    }
 
   }
 

@@ -1,4 +1,4 @@
-define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui, events, sync, routes) ->
+define(['business', 'ui', 'events', 'sync2', 'routes'], (business, ui, events, sync, routes) ->
 
   class Item extends business.Item
     constructor: (@parent, @interpreter, id, name, done, visible) ->
@@ -98,8 +98,8 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
 
 
   class Sync extends sync.Sync
-    constructor: (route) ->
-      super(route)
+    constructor: (syncRoute, historyRoute, dbName) ->
+      super(syncRoute, historyRoute, dbName)
       @ui = new ui.Sync(this)
     sync: (optimistic) ->
       if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
@@ -123,8 +123,8 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
   # Interprete domain event as state transitions
   class Interpreter extends Sync
 
-    constructor: (@items, route) ->
-      super(route)
+    constructor: (@items, syncRoute, historyRoute) ->
+      super(syncRoute, historyRoute, "todo")
 
     interprete: ((event) -> events.fold(event)(
       Toggled: (itemId) =>
@@ -143,9 +143,9 @@ define(['business', 'ui', 'events', 'sync2', '/assets/routes.js'], (business, ui
   # Entry point
   class App
     constructor: (data) ->
-      interpreter = new Interpreter((() => @items), routes.controllers.Api.sync2())
-      items = data.map((item) => new Item((() => @items), interpreter, item.id, item.content, item.done, true))
-      @items = new Items(interpreter, items)
+      @interpreter = new Interpreter((() => @items), routes.controllers.Api.sync2(), routes.controllers.Api.history)
+      items = data.map((item) => new Item((() => @items), @interpreter, item.id, item.content, item.done, true))
+      @items = new Items(@interpreter, items)
       @ui = @items.ui
       window.addEventListener('hashchange',() =>
         @route()

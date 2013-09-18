@@ -58,7 +58,13 @@ object Api extends Controller {
    * A websocket entry point to apply batches of events and receive notifications from other clients actions
    */
   val sync2 = WebSocket.using[JsValue] { _ =>
-    (Json.fromJson[Seq[Event]] &>> Todo.sync.commands, Todo.sync.notifications &> Json.toJson[Seq[Event]])
+    (Json.fromJson[Seq[Event]] &>> Todo.sync.commands, Todo.sync.notifications &> Json.toJson[Seq[(Double, Event)]])
   }
+
+
+  def history(since: Option[Double]) = Action {
+    Async(Todo.log.history(since) map (es => Ok(Json.toJson(es))))
+  }
+
 
 }

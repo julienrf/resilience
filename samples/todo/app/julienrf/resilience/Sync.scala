@@ -17,7 +17,7 @@ trait Sync extends Event with Log {
    */
   class Sync(interprete: Event => Future[Unit])(implicit ec: ExecutionContext) {
 
-    private val (_notifications, channel) = Concurrent.broadcast[Seq[Event]]
+    private val (_notifications, channel) = Concurrent.broadcast[Seq[(Double, Event)]]
 
     // Output stream of events
     val notifications = _notifications
@@ -29,10 +29,10 @@ trait Sync extends Event with Log {
         if !alreadyApplied
         // Apply the event to the application’s state
         _ <- interprete(event)
-        // Notify each client
-        _ = channel.push(Seq(event))
         // Append it to the log
-        _ <- log.append(event)
+        time <- log.append(event)
+        // Notify each client
+        _ = channel.push(Seq(time -> event))
       } yield ()
     }
 
@@ -42,7 +42,7 @@ trait Sync extends Event with Log {
     // Recover state. HACK Should be synchronous
     for {
       events <- log.history()
-      _ <- events.foldLeft(Future.successful(()))((f, event) => f.flatMap(_ => interprete(event)))
+      _ <- events.foldLeft(Future.successful(()))((f, event) => f.flatMap(_ => interprete(event._2)))
     } yield ()
 
   }

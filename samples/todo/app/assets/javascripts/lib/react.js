@@ -86,7 +86,7 @@ define(function () {
     mergeAll: function (os) {
       return new Observable(function (publish) {
         os.foreach(function (o) {
-          o.subscribe(new Observer(function (_) { publish(_); }));
+          o.subscribe(function (_) { publish(_); });
         });
       })
     },
@@ -100,6 +100,11 @@ define(function () {
           publish = p;
         })
       }
+    },
+    pure: function (value) {
+      return new Observable(function (publish) {
+          publish(value);
+      })
     },
     http: http
   }
