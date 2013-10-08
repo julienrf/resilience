@@ -1,7 +1,6 @@
 /**
  * TODO
- *  - Global error notifications
- *  - Cache
+ *  - Use cache on failure
  */
 define(function () {
 
@@ -124,6 +123,14 @@ define(function () {
             response.success(xhr.response);
           }
         } else {
+          // FIXME Use a chain of responsibility pattern to handle the failure?
+          http.failureCallbacks.forEach(function (f) {
+            f({
+              url: url,
+              status: xhr.status,
+              text: xhr.statusText
+            });
+          });
           response.failure('HTTP request failed: ' + xhr.status + ' ' + xhr.statusText);
         }
       }
@@ -132,6 +139,12 @@ define(function () {
     xhr.send(config.data);
 
     return response.future
+  };
+
+  http.failureCallbacks = [];
+
+  http.onFailure = function (f) {
+    http.failureCallbacks.push(f);
   };
 
   return http

@@ -157,6 +157,9 @@ define(['business', 'ui', 'events', 'sync2', 'routes', 'lib/http'], (business, u
         @route()
       )
       @route()
+      http.onFailure((info) ->
+        alert('Oops. A request to the server failed (' + info.url + ').')
+      )
 
     route: () ->
       switch window.location.hash
