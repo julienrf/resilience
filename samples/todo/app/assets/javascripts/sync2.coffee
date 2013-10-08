@@ -23,6 +23,7 @@ define(['lib/react'], (react) ->
             e.target.result.continue()
         )
         req.addEventListener('error', (e) -> console.log(e))
+        # load new events from server
         tx.addEventListener('complete', (e) =>
           react.http.send(react.pure(react.http.get(historyRoute(maxIdx).url)))
             .subscribe((es) => es.forEach((e) => @execute(e[0], e[1])))

@@ -31,6 +31,10 @@ object Application extends Controller {
           |${routes.Assets.at("javascripts/lib/react.js").url}
           |${routes.Assets.at("javascripts/main.js").url}
           |${routes.Assets.at("javascripts/routes.js").url}
+          |NETWORK:
+          |*
+          |SETTINGS:
+          |prefer-online
         """.stripMargin).as("text/cache-manifest")
     }
   }
