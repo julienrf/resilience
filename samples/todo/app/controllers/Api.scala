@@ -66,5 +66,9 @@ object Api extends Controller {
     Async(Todo.log.history(since) map (es => Ok(Json.toJson(es))))
   }
 
+  val about = Action {
+    Ok(Json.obj("content" -> "Resilient TodoMVC implementation"))
+  }
+
 
 }

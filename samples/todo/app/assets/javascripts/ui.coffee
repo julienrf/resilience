@@ -79,6 +79,7 @@ define(['lib/el'], (el) ->
         filter.root,
         @clearBtn
       )
+      @aboutBtn = el('button')('About')
       @root = el('div')(
         el('header', { id: 'header' })(
           el('h1')('todos'),
@@ -86,6 +87,7 @@ define(['lib/el'], (el) ->
         ),
         @main,
         @footer,
+        el('div')(@aboutBtn)
         sync.root
       )
 
@@ -100,6 +102,10 @@ define(['lib/el'], (el) ->
 
       @clearBtn.addEventListener('click', () =>
         @ctl.clearCompletedClicked()
+      )
+
+      @aboutBtn.addEventListener('click', () =>
+        @ctl.aboutClicked()
       )
 
     add: (item) ->

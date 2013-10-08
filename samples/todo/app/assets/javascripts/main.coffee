@@ -1,4 +1,4 @@
-require(['routes', 'control', 'lib/react'], (routes, ctl, react) ->
+require(['routes', 'control'], (routes, ctl) ->
 
   # Start the application with cached events
   todos = new ctl.App([])

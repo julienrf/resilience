@@ -1,4 +1,4 @@
-define(['business', 'ui', 'events', 'sync2', 'routes'], (business, ui, events, sync, routes) ->
+define(['business', 'ui', 'events', 'sync2', 'routes', 'lib/http'], (business, ui, events, sync, routes, http) ->
 
   class Item extends business.Item
     constructor: (@parent, @interpreter, id, name, done, visible) ->
@@ -95,6 +95,12 @@ define(['business', 'ui', 'events', 'sync2', 'routes'], (business, ui, events, s
           item.ui.hide()
       )
       @filter.ui.showCompletedSelected()
+
+    aboutClicked: () ->
+      http(routes.controllers.Api.about())
+        .foreach((response) =>
+          alert(response.content)
+        )
 
 
   class Sync extends sync.Sync

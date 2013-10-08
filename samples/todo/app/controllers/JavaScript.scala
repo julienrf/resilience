@@ -15,7 +15,8 @@ object JavaScript extends Controller {
       // Api.toggle,
       // Api.sync,
       Api.sync2,
-      Api.history
+      Api.history,
+      Api.about
     )
     Ok(s"define(function () { $jsRoutes; return routes });").as(JAVASCRIPT)
   }

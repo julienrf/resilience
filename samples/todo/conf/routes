@@ -6,6 +6,7 @@ GET         /assets/javascripts/routes.js        controllers.JavaScript.routes
 POST        /sync                                controllers.Api.sync
 GET         /sync-2                              controllers.Api.sync2
 GET         /history                             controllers.Api.history(last: Option[Double])
+GET         /about                               controllers.Api.about
 # POST    /                           controllers.Api.add
 # DELETE  /:id                        controllers.Api.remove(id)
 # POST    /:id                        controllers.Api.toggle(id)
