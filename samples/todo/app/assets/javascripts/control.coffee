@@ -98,8 +98,12 @@ define(['business', 'ui', 'events', 'sync2', 'routes', 'lib/http'], (business, u
 
     aboutClicked: () ->
       http(routes.controllers.Api.about())
-        .foreach((response) =>
+        .map((response) =>
           alert(response.content)
+        ).recoverServerFailure((exception) ->
+          console.log(exception)
+        ).recoverNetworkFailure((exception) ->
+          console.log(exception)
         )
 
 
@@ -157,9 +161,9 @@ define(['business', 'ui', 'events', 'sync2', 'routes', 'lib/http'], (business, u
         @route()
       )
       @route()
-      http.onFailure((info) ->
-        alert('Oops. A request to the server failed (' + info.url + ').')
-      )
+      #http.onFailure((info) ->
+      #  alert('Oops. A request to the server failed (' + info.url + ').')
+      #)
 
     route: () ->
       switch window.location.hash

@@ -8,7 +8,10 @@ define(function () {
     this.value = value;
   };
 
-  var Failure = function (exception) {
+  var NetworkFailure = function (exception) {
+    this.exception = exception;
+  };
+  var ServerFailure = function (exception) {
     this.exception = exception;
   };
 
@@ -37,8 +40,8 @@ define(function () {
   Promise.prototype.success = function (value) {
     this.complete(new Success(value));
   };
-  Promise.prototype.failure = function (exception) {
-    this.complete(new Failure(exception));
+  Promise.prototype.failure = function (failure) {
+    this.complete(failure);
   };
 
   var Future = function (onComplete) {
@@ -84,8 +87,32 @@ define(function () {
   Future.prototype.recover = function (f) {
     var p = new Promise();
     this.onComplete(function (result) {
-      if (result instanceof Failure) {
+      if (result instanceof Success) {
+        p.complete(result);
+      } else {
         p.success(f(result.exception));
+      }
+    });
+    return p.future
+  };
+  Future.prototype.recoverServerFailure = function (f) {
+    var p = new Promise();
+    this.onComplete(function (result) {
+      if (result instanceof ServerFailure) {
+        p.success(f(result.exception));
+      } else {
+        p.complete(result);
+      }
+    });
+    return p.future
+  };
+  Future.prototype.recoverNetworkFailure = function (f) {
+    var p = new Promise();
+    this.onComplete(function (result) {
+      if (result instanceof NetworkFailure) {
+        p.success(f(result.exception));
+      } else {
+        p.complete(result);
       }
     });
     return p.future
@@ -115,23 +142,29 @@ define(function () {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         var status = xhr.status;
         // In case of success or client error we successfully complete the response promise
-        if (status >= 200 && status < 500) {
+        if (status >= 200 && status < 400) {
           // unsupported responseType = 'json' fallback
           if (type === 'json' && xhr.responseType !== 'json') {
             response.success(JSON.parse(xhr.response));
           } else {
             response.success(xhr.response);
           }
+        } else if (status >= 400 && status < 600) {
+          response.failure(
+              new ServerFailure('Server failure "' + method + ' ' + url + '": ' + xhr.status + ' ' + xhr.statusText)
+          );
         } else {
           // FIXME Use a chain of responsibility pattern to handle the failure?
-          http.failureCallbacks.forEach(function (f) {
+          /*http.failureCallbacks.forEach(function (f) {
             f({
               url: url,
               status: xhr.status,
               text: xhr.statusText
             });
-          });
-          response.failure('HTTP request failed: ' + xhr.status + ' ' + xhr.statusText);
+          });*/
+          response.failure(
+              new NetworkFailure('Network failure "' + method + ' ' + url + '": ' + xhr.status + ' ' + xhr.statusText)
+          );
         }
       }
     });
@@ -141,11 +174,11 @@ define(function () {
     return response.future
   };
 
-  http.failureCallbacks = [];
+  /*http.failureCallbacks = [];
 
   http.onFailure = function (f) {
     http.failureCallbacks.push(f);
-  };
+  };*/
 
   return http
 

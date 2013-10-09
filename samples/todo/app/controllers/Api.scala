@@ -69,7 +69,7 @@ object Api extends Controller {
     Todo.log.history(since) map (es => Ok(Json.toJson(es)))
   }
 
-  val about = Cached("Api.about", 1.day.toSeconds.toInt) {
+  val about = Cached("Api.about") {
     Action {
       Ok(Json.obj("content" -> "Resilient TodoMVC implementation"))
     }
