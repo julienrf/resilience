@@ -8,6 +8,9 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.Logger
 
 import business.Todo
+import play.api.cache.Cached
+import play.api.Play.current
+import scala.concurrent.duration.DurationInt
 
 object Api extends Controller {
 
@@ -62,13 +65,14 @@ object Api extends Controller {
   }
 
 
-  def history(since: Option[Double]) = Action {
-    Async(Todo.log.history(since) map (es => Ok(Json.toJson(es))))
+  def history(since: Option[Double]) = Action.async {
+    Todo.log.history(since) map (es => Ok(Json.toJson(es)))
   }
 
-  val about = Action {
-    Ok(Json.obj("content" -> "Resilient TodoMVC implementation"))
+  val about = Cached("Api.about", 1.day.toSeconds.toInt) {
+    Action {
+      Ok(Json.obj("content" -> "Resilient TodoMVC implementation"))
+    }
   }
-
 
 }

@@ -99,7 +99,7 @@ define(function () {
 
     xhr.open(method, url);
 
-    var type = config.type || 'json'; // default type is JSON
+    var type = /*config.type ||*/ 'json'; // default type is JSON
     xhr.responseType = type;
     if (type === 'json') {
       xhr.setRequestHeader('Accept', 'application/json');
