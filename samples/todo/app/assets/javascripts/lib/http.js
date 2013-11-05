@@ -174,6 +174,10 @@ define(function () {
     return response.future
   };
 
+  http.get = function (url) {
+    return http({ method: 'GET', url: url })
+  };
+
   /*http.failureCallbacks = [];
 
   http.onFailure = function (f) {

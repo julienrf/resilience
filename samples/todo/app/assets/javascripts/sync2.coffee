@@ -1,4 +1,4 @@
-define(['lib/react'], (react) ->
+define(['lib/http'], (http) ->
 
   # Method `interprete :: Event -> ()` is abstract and must be implemented to interprete the event in terms of business logic
   # FIXME Make `interprete` a constructor parameter
@@ -25,8 +25,8 @@ define(['lib/react'], (react) ->
         req.addEventListener('error', (e) -> console.log(e))
         # load new events from server
         tx.addEventListener('complete', (e) =>
-          react.http.send(react.pure(react.http.get(historyRoute(maxIdx).url)))
-            .subscribe((es) => es.forEach((e) => @execute(e[0], e[1])))
+          http.get(historyRoute(maxIdx).url)
+            .foreach((es) => es.forEach((e) => @execute(e[0], e[1])))
         )
       )
       r.addEventListener('upgradeneeded', (e) =>
