@@ -1,0 +1,19 @@
+{
+  "name": "resilience-http",
+  "version": "0.0.1",
+  "description": "HTTP Client designed for resilience",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.7.1",
+    "grunt-contrib-uglify": "~0.2.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:julienrf/resilience.git"
+  },
+  "bugs": {
+    "url": "https://github.com/julienrf/resilience/issues"
+  },
+  "author": "Julien Richard-Foy",
+  "license": "Apache 2"
+}

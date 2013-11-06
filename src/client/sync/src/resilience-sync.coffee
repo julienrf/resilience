@@ -1,4 +1,4 @@
-define(['lib/http'], (http) ->
+define(['resilience-http'], (http) ->
 
   # Method `interprete :: Event -> ()` is abstract and must be implemented to interprete the event in terms of business logic
   # FIXME Make `interprete` a constructor parameter

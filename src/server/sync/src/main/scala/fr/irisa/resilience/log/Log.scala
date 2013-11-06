@@ -1,7 +1,7 @@
-package julienrf.resilience.log
+package fr.irisa.resilience.log
 
 import scala.concurrent.Future
-import julienrf.resilience.Event
+import fr.irisa.resilience.Event
 
 /**
  * Stores the succession of events.

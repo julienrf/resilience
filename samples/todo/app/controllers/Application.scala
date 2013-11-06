@@ -25,12 +25,11 @@ object Application extends Controller {
           |${routes.Assets.at("javascripts/control.js").url}
           |${routes.Assets.at("javascripts/business.js").url}
           |${routes.Assets.at("javascripts/ui.js").url}
-          |${routes.Assets.at("javascripts/sync2.js").url}
+          |${routes.Assets.at("javascripts/resilience-sync.js").url}
           |${routes.Assets.at("javascripts/events.js").url}
           |${routes.Assets.at("javascripts/lib/uuid.js").url}
           |${routes.Assets.at("javascripts/lib/el.js").url}
-          |${routes.Assets.at("javascripts/lib/react.js").url}
-          |${routes.Assets.at("javascripts/lib/http.js").url}
+          |${routes.Assets.at("javascripts/resilience-http.js").url}
           |${routes.Assets.at("javascripts/main.js").url}
           |${routes.Assets.at("javascripts/routes.js").url}
           |NETWORK:

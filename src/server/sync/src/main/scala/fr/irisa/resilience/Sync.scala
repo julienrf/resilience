@@ -1,9 +1,9 @@
-package julienrf.resilience
+package fr.irisa.resilience
 
 import play.api.libs.iteratee.{Enumeratee, Enumerator, Iteratee, Concurrent}
 import play.api.Logger
 import scala.concurrent.{ExecutionContext, Future}
-import julienrf.resilience.log.Log
+import fr.irisa.resilience.log.Log
 
 /**
  * Synchronizes between clients and servers

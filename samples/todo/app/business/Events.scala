@@ -1,6 +1,6 @@
 package business
 
-import julienrf.resilience.Event
+import fr.irisa.resilience.Event
 
 trait Events extends Event {
 

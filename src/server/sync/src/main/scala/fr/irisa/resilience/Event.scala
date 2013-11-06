@@ -1,4 +1,4 @@
-package julienrf.resilience
+package fr.irisa.resilience
 
 trait Event {
 

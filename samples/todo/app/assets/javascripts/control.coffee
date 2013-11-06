@@ -1,4 +1,4 @@
-define(['business', 'ui', 'events', 'sync2', 'routes', 'lib/http'], (business, ui, events, sync, routes, http) ->
+define(['business', 'ui', 'events', 'resilience-sync', 'routes', 'resilience-http'], (business, ui, events, sync, routes, http) ->
 
   class Item extends business.Item
     constructor: (@parent, @interpreter, id, name, done, visible) ->

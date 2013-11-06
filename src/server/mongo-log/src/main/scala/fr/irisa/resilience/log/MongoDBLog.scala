@@ -1,6 +1,6 @@
-package julienrf.resilience.log
+package fr.irisa.resilience.log
 
-import julienrf.resilience.Event
+import fr.irisa.resilience.Event
 
 import scala.concurrent.{Future, ExecutionContext}
 
@@ -32,7 +32,7 @@ trait MongoDBLog extends Log with Event {
         case Some(timestamp) => Json.obj("time" -> Json.obj("$gt" -> since))
         case None => Json.obj()
       }
-      for (eventsList <- collection.find(request).sort(Json.obj("time" -> 1)).cursor[JsObject].toList) yield {
+      for (eventsList <- collection.find(request).sort(Json.obj("time" -> 1)).cursor[JsObject].collect[List]()) yield {
         for {
           entry <- eventsList
           time <- (entry \ "time").asOpt[Double]
