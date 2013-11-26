@@ -2,7 +2,7 @@ define(['resilience-http'], (http) ->
 
   # Method `interprete :: Event -> ()` is abstract and must be implemented to interprete the event in terms of business logic
   # FIXME Make `interprete` a constructor parameter
-  class Interpreter
+  class Sync
     constructor: (@syncRoute, historyRoute, dbName) ->
       @queue = []
       @ws = @makeWS(@syncRoute.webSocketURL())
@@ -96,9 +96,54 @@ define(['resilience-http'], (http) ->
         req.addEventListener('error', (e) -> console.log(e))
       )
 
+  class SyncCtl extends Sync
+    constructor: (syncRoute, historyRoute, dbName) ->
+      super(syncRoute, historyRoute, dbName)
+      @ui = new SyncUi(this)
+    sync: (optimistic) ->
+      if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
+        @ui.updateStatus(SyncUi.Pending)
+      super(optimistic)
+    remove: (event) ->
+      super(event)
+      @ui.updateStatus(if @queue.length > 0 then SyncUi.Pending else SyncUi.Synced)
+    connectionLost: () ->
+      @ui.updateStatus(SyncUi.NoConnection)
+      super()
+    connectionRecovered: () ->
+      @ui.updateStatus(if @queue.length > 0 then SyncUi.Pending else SyncUi.Synced)
+      super()
+    beforeUnload: (e) ->
+      if @queue.length > 0
+        confirmation = 'You have unsaved changes.'
+        (e || window.event).returnValue = confirmation
+        confirmation
 
+  class SyncUi
+    constructor: (@ctl) ->
+      @status = document.createElement('div')
+      @status.className = 'synced'
+      @root = document.createElement('div')
+      @root.className = 'sync-status'
+      @root.appendChild(@status)
+      window.addEventListener('beforeunload', (e) -> ctl.beforeUnload(e))
+    updateStatus: (status) ->
+      switch status
+        when SyncUi.NoConnection then @status.className = 'no-connection'
+        when SyncUi.Synced then @status.className = 'synced'
+        when SyncUi.Pending then @status.className = 'pending'
+
+  SyncUi.NoConnection = 0
+  SyncUi.Synced = 1
+  SyncUi.Pending = 2
 
   {
-    Sync: Interpreter
+    Sync: Sync,
+    ctl: {
+      Sync: SyncCtl
+    },
+    ui: {
+      Sync: SyncUi
+    }
   }
 )

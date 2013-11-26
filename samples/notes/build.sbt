@@ -1,4 +1,4 @@
-name := "todo"
+name := "notes"
 
 version := "1.0-SNAPSHOT"
 

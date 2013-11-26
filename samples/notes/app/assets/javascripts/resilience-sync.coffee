@@ -1,0 +1,1 @@
+../../../../../src/client/sync/src/resilience-sync.coffee

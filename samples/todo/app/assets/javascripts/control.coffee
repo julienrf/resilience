@@ -107,31 +107,8 @@ define(['business', 'ui', 'events', 'resilience-sync', 'routes', 'resilience-htt
         )
 
 
-  class Sync extends sync.Sync
-    constructor: (syncRoute, historyRoute, dbName) ->
-      super(syncRoute, historyRoute, dbName)
-      @ui = new ui.Sync(this)
-    sync: (optimistic) ->
-      if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
-        @ui.updateStatus(ui.Sync.Pending)
-      super(optimistic)
-    remove: (event) ->
-      super(event)
-      @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
-    connectionLost: () ->
-      @ui.updateStatus(ui.Sync.NoConnection)
-      super()
-    connectionRecovered: () ->
-      @ui.updateStatus(if @queue.length > 0 then ui.Sync.Pending else ui.Sync.Synced)
-      super()
-    beforeUnload: (e) ->
-      if @queue.length > 0
-        confirmation = 'You have unsaved changes.'
-        (e || window.event).returnValue = confirmation
-        confirmation
-
   # Interprete domain event as state transitions
-  class Interpreter extends Sync
+  class Interpreter extends sync.ctl.Sync
 
     constructor: (@items, syncRoute, historyRoute) ->
       super(syncRoute, historyRoute, "todo")

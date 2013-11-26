@@ -134,25 +134,9 @@ define(['lib/el'], (el) ->
       @main.style.display = 'block'
       @footer.style.display = 'block'
 
-  class Sync
-    constructor: (@ctl) ->
-      @status = el('div', { 'class': 'synced' })()
-      @root = el('div', { 'class': 'sync-status' })(@status)
-      window.addEventListener('beforeunload', (e) -> ctl.beforeUnload(e))
-    updateStatus: (status) ->
-      switch status
-        when Sync.NoConnection then @status.className = 'no-connection'
-        when Sync.Synced then @status.className = 'synced'
-        when Sync.Pending then @status.className = 'pending'
-
-  Sync.NoConnection = 0
-  Sync.Synced = 1
-  Sync.Pending = 2
-
   {
     Item: Item,
     Items: Items,
-    Filter: Filter,
-    Sync: Sync
+    Filter: Filter
   }
 )

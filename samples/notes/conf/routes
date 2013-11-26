@@ -1,0 +1,5 @@
+GET        /                    controllers.Application.index
+GET        /sync                controllers.Application.sync
+GET        /history             controllers.Application.history(last: Option[Double])
+GET        /assets/javascripts/routes.js controllers.Application.javascriptRouter
+GET        /assets/*file        controllers.Assets.at(path = "/public", file)
