@@ -3,7 +3,7 @@ Tools for building resilient Web applications
 
 # Description
 
-This repository contains server-side and client-side libraries for writing resilient Web applications:
+This repository contains server-side and client-side libraries for writing resilient Web applications (namely applications that support offline mode):
 
 - a Scala library handling client/server synchronization from the server-side,
 - a Scala library to store an event log in a MongoDB database,

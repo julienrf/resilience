@@ -5,6 +5,7 @@ define(['resilience-http'], (http) ->
   class Sync
     constructor: (@syncRoute, historyRoute, dbName) ->
       @queue = []
+      @_lastTime = -1
       @ws = @makeWS(@syncRoute.webSocketURL())
       @idb = []
       r = window.indexedDB.open(dbName)
@@ -14,18 +15,17 @@ define(['resilience-http'], (http) ->
         # load local journal
         tx = db.transaction(['log'])
         req = tx.objectStore('log').openCursor(IDBKeyRange.lowerBound(0))
-        maxIdx = null
         req.addEventListener('success', (e) =>
           result = e.target.result
           if result != null
             @interprete(result.value.event)
-            maxIdx = result.value.time
+            @_lastTime = result.value.time
             e.target.result.continue()
         )
         req.addEventListener('error', (e) -> console.log(e))
         # load new events from server
         tx.addEventListener('complete', (e) =>
-          http.get(historyRoute(maxIdx).url)
+          http.get(historyRoute(@_lastTime).url)
             .foreach((es) => es.forEach((e) => @execute(e[0], e[1])))
         )
       )
@@ -65,7 +65,7 @@ define(['resilience-http'], (http) ->
 
     sync: (optimistic) ->
       if @queue.length > 0 and @ws and @ws.readyState == WebSocket.OPEN
-        @ws.send(JSON.stringify(if optimistic then [@queue[@queue.length - 1]] else @queue))
+        @ws.send(JSON.stringify([@_lastTime, if optimistic then [@queue[@queue.length - 1]] else @queue]))
 
     remove: (event) ->
       @queue = @queue.filter((e) -> e.id != event.id)
@@ -87,13 +87,14 @@ define(['resilience-http'], (http) ->
 
     log: (time, event) ->
       # HACK Handle emptiness of idb
-      @idb.forEach((db) ->
+      @idb.forEach((db) =>
         tx = db.transaction(["log"], "readwrite")
         req = tx.objectStore("log").put({
           time: time,
           event: event
         })
         req.addEventListener('error', (e) -> console.log(e))
+        req.addEventListener('complete', (e) => @_lastTime = time)
       )
 
   class SyncCtl extends Sync
@@ -118,6 +119,8 @@ define(['resilience-http'], (http) ->
         confirmation = 'You have unsaved changes.'
         (e || window.event).returnValue = confirmation
         confirmation
+    syncClicked: () ->
+      @sync()
 
   class SyncUi
     constructor: (@ctl) ->
@@ -127,6 +130,10 @@ define(['resilience-http'], (http) ->
       @root.className = 'sync-status'
       @root.appendChild(@status)
       window.addEventListener('beforeunload', (e) -> ctl.beforeUnload(e))
+      @status.addEventListener('click', (e) =>
+        if @status.className != 'synced'
+          ctl.syncClicked()
+      )
     updateStatus: (status) ->
       switch status
         when SyncUi.NoConnection then @status.className = 'no-connection'

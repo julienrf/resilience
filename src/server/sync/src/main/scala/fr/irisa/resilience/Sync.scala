@@ -1,14 +1,26 @@
 package fr.irisa.resilience
 
 import play.api.libs.iteratee.{Enumeratee, Enumerator, Iteratee, Concurrent}
-import play.api.Logger
 import scala.concurrent.{ExecutionContext, Future}
 import fr.irisa.resilience.log.Log
+import scala.concurrent.stm.Ref
+import play.api.Logger
+import java.util.UUID
 
 /**
  * Synchronizes between clients and servers
  */
 trait Sync extends Event with Log {
+
+  /**
+   * A notification is an event paired with a logical timestamp
+   */
+  type Notifications = Seq[(Double, Event)]
+
+  /**
+   * A set of events paired with the last known event timestamp
+   */
+  type Commands = (Double, Seq[Event])
 
   def sync: Sync
 
@@ -17,10 +29,23 @@ trait Sync extends Event with Log {
    */
   class Sync(interprete: Event => Future[Unit])(implicit ec: ExecutionContext) {
 
-    private val (_notifications, channel) = Concurrent.broadcast[Seq[(Double, Event)]]
+    private val clients = Ref(Map.empty[String, Concurrent.Channel[Notifications]])
 
-    // Output stream of events
-    val notifications = _notifications
+    /**
+     * @return A tuple containing an iteratee consuming commands sent by the joining client and an enumerator pushing notifications to this client
+     */
+    def join(): (Iteratee[Commands, Unit], Enumerator[Notifications]) = {
+      val id = UUID.randomUUID().toString
+      val clientCommands = commands.map { _ =>
+        Logger.debug(s"unsubscribe [$id]")
+        clients.single.transform(_ - id)
+      }
+      val clientNotifications = Concurrent.unicast[Notifications](onStart = { channel =>
+        clients.single.transform(_ + (id -> channel))
+        Logger.debug(s"subscribe [$id]")
+      })
+      (clientCommands, clientNotifications)
+    }
 
     private val atomicallyApply = Iteratee.foldM(()) { (_, event: Event) =>
       for {
@@ -32,12 +57,20 @@ trait Sync extends Event with Log {
         // Append it to the log
         time <- log.append(event)
         // Notify each client
-        _ = channel.push(Seq(time -> event))
+        _ = clients.single().values.foreach(_.push(Seq(time -> event)))
       } yield ()
     }
 
+    // TODO transform events to achieve convergence
+    private val convergentEvents: Enumeratee[(Double, Seq[Event]), Seq[Event]] =
+      Enumeratee.map[(Double, Seq[Event])] { case (timestamp, events) => events }
+
+    private val flatten: Enumeratee[Seq[Event], Event] =
+      Enumeratee.mapFlatten[Seq[Event]](Enumerator(_: _*))
+
     // We receive commands through this iteratee
-    val commands: Iteratee[Seq[Event], Unit] = Enumeratee.mapFlatten[Seq[Event]](Enumerator(_: _*)) &>> atomicallyApply
+    val commands: Iteratee[Commands, Unit] =
+      convergentEvents ><> flatten &>> atomicallyApply
 
     // Recover state. HACK Should be synchronous
     for {
