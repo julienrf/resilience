@@ -13,7 +13,7 @@ import fr.irisa.resilience.SyncController
 
 object Api extends SyncController {
 
-  import Todo.{Added, Removed, Toggled, Event}
+  import Todo.{Added, Removed, Toggled}
   import Todo.protocols._
 
   val add = Action { implicit request =>
@@ -25,19 +25,19 @@ object Api extends SyncController {
     )).bindFromRequest().fold(
       _ => BadRequest,
       { case (id, itemId, content, done) =>
-        Todo.state.apply(Added(id, itemId, content, done))
+        Todo.sync.applyCommands(-1, Added(id, itemId, content, done))
         Ok
       }
     )
   }
 
   def remove(id: String, itemId: String) = Action { implicit request =>
-    Todo.state.apply(Removed(id, itemId))
+    Todo.sync.applyCommands(-1, Removed(id, itemId))
     Ok
   }
 
   def toggle(id: String, itemId: String) = Action { implicit request =>
-    Todo.state.apply(Toggled(id, itemId))
+    Todo.sync.applyCommands(-1, Toggled(id, itemId))
     Ok
   }
 

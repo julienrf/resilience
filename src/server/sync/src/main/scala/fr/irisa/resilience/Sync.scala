@@ -1,6 +1,6 @@
 package fr.irisa.resilience
 
-import play.api.libs.iteratee.{Enumeratee, Enumerator, Iteratee, Concurrent}
+import play.api.libs.iteratee._
 import scala.concurrent.{ExecutionContext, Future}
 import fr.irisa.resilience.log.Log
 import scala.concurrent.stm.Ref
@@ -38,21 +38,11 @@ trait Sync extends Event with Log {
 
     private val clients = Ref(Map.empty[String, Concurrent.Channel[Notifications]])
 
-    /**
-     * @return A tuple containing an iteratee consuming commands sent by the joining client and an enumerator pushing notifications to this client
-     */
-    def join(): (Iteratee[Commands, Unit], Enumerator[Notifications]) = {
-      val id = UUID.randomUUID().toString
-      val commandsConsumer = commands.map { _ =>
-        Logger.debug(s"unsubscribe [$id]")
-        clients.single.transform(_ - id)
-      }
-      val notificationsPusher = Concurrent.unicast[Notifications](onStart = { channel =>
-        clients.single.transform(_ + (id -> channel))
-        Logger.debug(s"subscribe [$id]")
-      })
-      (commandsConsumer, notificationsPusher)
-    }
+    // Recover state. HACK Should be synchronous
+    val stateRecovered = for {
+      events <- log.history()
+      _ <- events.foldLeft(Future.successful(()))((f, event) => f.flatMap(_ => interprete(event._2)))
+    } yield ()
 
     private val atomicallyApply = Iteratee.foldM(()) { (_, event: Event) =>
       for {
@@ -87,11 +77,27 @@ trait Sync extends Event with Log {
     private val commands: Iteratee[Commands, Unit] =
       convergingEvents ><> flatten &>> atomicallyApply
 
-    // Recover state. HACK Should be synchronous
-    val stateRecovered = for {
-      events <- log.history()
-      _ <- events.foldLeft(Future.successful(()))((f, event) => f.flatMap(_ => interprete(event._2)))
-    } yield ()
+    /**
+     * @return A tuple containing an iteratee consuming commands sent by the joining client and an enumerator pushing notifications to this client
+     */
+    def join(): (Iteratee[Commands, Unit], Enumerator[Notifications]) = {
+      val id = UUID.randomUUID().toString
+      val commandsConsumer = commands.map { _ =>
+        Logger.debug(s"unsubscribe [$id]")
+        clients.single.transform(_ - id)
+      }
+      val notificationsPusher = Concurrent.unicast[Notifications](onStart = { channel =>
+        clients.single.transform(_ + (id -> channel))
+        Logger.debug(s"subscribe [$id]")
+      })
+      (commandsConsumer, notificationsPusher)
+    }
+
+    /**
+     * Imperatively applies commands
+     * @param cs Commands to apply
+     */
+    def applyCommands(timestamp: Double, cs: Event*): Unit = commands.feed(Input.El(timestamp -> cs))
 
   }
 
