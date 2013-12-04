@@ -5,7 +5,7 @@ define(['resilience-http'], (http) ->
   class Sync
     constructor: (@syncRoute, historyRoute, dbName) ->
       @queue = []
-      @_lastTime = -1
+      @_lastTime = -1 # FIXME start at 0?
       @ws = @makeWS(@syncRoute.webSocketURL())
       @idb = []
       r = window.indexedDB.open(dbName)
@@ -45,7 +45,12 @@ define(['resilience-http'], (http) ->
             @remove(event)
             @log(time, event)
           else
-            @execute(time, event)
+            if @queue.length > 0
+              convergedEvent = @queue.reduce(((e1, e2) => if e1 == null then null else @converge(e1, e2)), event)
+              if convergedEvent != null
+                @execute(time, convergedEvent)
+            else
+              @execute(time, event)
       )
       ws.addEventListener('open', () => console.log('open', arguments); @connectionRecovered())
       ws.addEventListener('error', () => console.log('error', arguments); @connectionLost()) # TODO Handle errors
@@ -96,6 +101,9 @@ define(['resilience-http'], (http) ->
         req.addEventListener('error', (e) -> console.log(e))
         req.addEventListener('complete', (e) => @_lastTime = time)
       )
+
+    converge: (e1, e2) ->
+      e1
 
   class SyncCtl extends Sync
     constructor: (syncRoute, historyRoute, dbName) ->

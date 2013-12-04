@@ -84,7 +84,7 @@ trait Sync extends Event with Log {
       Enumeratee.mapFlatten[Seq[Event]](Enumerator(_: _*))
 
     // We receive commands through this iteratee
-    val commands: Iteratee[Commands, Unit] =
+    private val commands: Iteratee[Commands, Unit] =
       convergingEvents ><> flatten &>> atomicallyApply
 
     // Recover state. HACK Should be synchronous
