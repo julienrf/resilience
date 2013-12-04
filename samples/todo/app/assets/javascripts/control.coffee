@@ -130,7 +130,7 @@ define(['business', 'ui', 'events', 'resilience-sync', 'routes', 'resilience-htt
   # Entry point
   class App
     constructor: (data) ->
-      @interpreter = new Interpreter((() => @items), routes.controllers.Api.sync2(), routes.controllers.Api.history)
+      @interpreter = new Interpreter((() => @items), routes.controllers.Api.sync(), routes.controllers.Api.history)
       items = data.map((item) => new Item((() => @items), @interpreter, item.id, item.content, item.done, true))
       @items = new Items(@interpreter, items)
       @ui = @items.ui

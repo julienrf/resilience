@@ -14,7 +14,7 @@ object JavaScript extends Controller {
       // Api.remove,
       // Api.toggle,
       // Api.sync,
-      Api.sync2,
+      Api.sync,
       Api.history,
       Api.about
     )

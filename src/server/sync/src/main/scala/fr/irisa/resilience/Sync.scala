@@ -6,6 +6,7 @@ import fr.irisa.resilience.log.Log
 import scala.concurrent.stm.Ref
 import play.api.Logger
 import java.util.UUID
+import scala.annotation.tailrec
 
 /**
  * Synchronizes between clients and servers
@@ -29,6 +30,12 @@ trait Sync extends Event with Log {
    */
   class Sync(interprete: Event => Future[Unit])(implicit ec: ExecutionContext) {
 
+    /**
+     * The default implementation returns `e1`, so it does *not* resolve conflicts at all.
+     * @return An event `e1′` such that `interprete(e2) ; interprete(e1′)` converges with the effect of `interprete(e1) ; interprete(e2)`
+     */
+    def converge(e1: Event, e2: Event): Option[Event] = Some(e1) // FIXME Leave it abstract?
+
     private val clients = Ref(Map.empty[String, Concurrent.Channel[Notifications]])
 
     /**
@@ -36,15 +43,15 @@ trait Sync extends Event with Log {
      */
     def join(): (Iteratee[Commands, Unit], Enumerator[Notifications]) = {
       val id = UUID.randomUUID().toString
-      val clientCommands = commands.map { _ =>
+      val commandsConsumer = commands.map { _ =>
         Logger.debug(s"unsubscribe [$id]")
         clients.single.transform(_ - id)
       }
-      val clientNotifications = Concurrent.unicast[Notifications](onStart = { channel =>
+      val notificationsPusher = Concurrent.unicast[Notifications](onStart = { channel =>
         clients.single.transform(_ + (id -> channel))
         Logger.debug(s"subscribe [$id]")
       })
-      (clientCommands, clientNotifications)
+      (commandsConsumer, notificationsPusher)
     }
 
     private val atomicallyApply = Iteratee.foldM(()) { (_, event: Event) =>
@@ -61,19 +68,27 @@ trait Sync extends Event with Log {
       } yield ()
     }
 
-    // TODO transform events to achieve convergence
-    private val convergentEvents: Enumeratee[(Double, Seq[Event]), Seq[Event]] =
-      Enumeratee.map[(Double, Seq[Event])] { case (timestamp, events) => events }
+    private val convergingEvents: Enumeratee[(Double, Seq[Event]), Seq[Event]] =
+      Enumeratee.mapM[(Double, Seq[Event])] { case (timestamp, events) =>
+
+        @tailrec
+        def convergeLoop(events: Seq[Event], priorEvents: Seq[Event]): Seq[Event] = priorEvents match {
+          case Nil => events
+          case event +: priorEvents => convergeLoop(events.flatMap(e => converge(e, event)), priorEvents)
+        }
+
+        for (history <- log.history(Some(timestamp))) yield convergeLoop(events, history.map(_._2))
+      }
 
     private val flatten: Enumeratee[Seq[Event], Event] =
       Enumeratee.mapFlatten[Seq[Event]](Enumerator(_: _*))
 
     // We receive commands through this iteratee
     val commands: Iteratee[Commands, Unit] =
-      convergentEvents ><> flatten &>> atomicallyApply
+      convergingEvents ><> flatten &>> atomicallyApply
 
     // Recover state. HACK Should be synchronous
-    for {
+    val stateRecovered = for {
       events <- log.history()
       _ <- events.foldLeft(Future.successful(()))((f, event) => f.flatMap(_ => interprete(event._2)))
     } yield ()

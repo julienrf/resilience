@@ -5,7 +5,6 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.Logger
 
 import business.Todo
 import play.api.cache.Cached
@@ -43,24 +42,9 @@ object Api extends SyncController {
   }
 
   /**
-   * Apply a batch of domain events to the application state.
-   */
-  val sync = Action(parse.json) { implicit request =>
-    val eventsApplied =
-      for (events <- request.body.validate[Seq[Event]]) yield {
-        events.foreach(Todo.state.apply)
-        Ok
-      }
-    eventsApplied recoverTotal { _ =>
-      Logger.warn("Unable to parse events")
-      BadRequest
-    }
-  }
-
-  /**
    * A websocket entry point to apply batches of events and receive notifications from other clients actions
    */
-  val sync2 = WebSocketSync(Todo)
+  val sync = WebSocketSync(Todo)
 
   def history(since: Option[Double]) = getHistory(Todo, since)
 
