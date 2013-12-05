@@ -44,7 +44,7 @@ define(['resilience-http'], (http) ->
           if @queue.some((e) -> e.id == event.id)
             @remove(event)
             @log(time, event)
-          else
+          else if time > @_lastTime
             if @queue.length > 0
               convergedEvent = @queue.reduce(((e1, e2) => if e1 == null then null else @converge(e1, e2)), event)
               if convergedEvent != null
@@ -99,7 +99,7 @@ define(['resilience-http'], (http) ->
           event: event
         })
         req.addEventListener('error', (e) -> console.log(e))
-        req.addEventListener('complete', (e) => @_lastTime = time)
+        req.addEventListener('success', (e) => @_lastTime = time )
       )
 
     converge: (e1, e2) ->

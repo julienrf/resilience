@@ -82,7 +82,14 @@ trait Sync extends Event with Log {
      */
     def join(): (Iteratee[Commands, Unit], Enumerator[Notifications]) = {
       val id = UUID.randomUUID().toString
-      val commandsConsumer = commands.map { _ =>
+      val getMissingUpdates = Enumeratee.map[Commands] { cs =>
+        val timestamp = cs._1
+        for (notifications <- log.history(Some(timestamp)) if notifications.nonEmpty) {
+          clients.single()(id).push(notifications)
+        }
+        cs
+      }
+      val commandsConsumer = getMissingUpdates &>> commands.map { _ =>
         Logger.debug(s"unsubscribe [$id]")
         clients.single.transform(_ - id)
       }
