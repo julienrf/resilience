@@ -2,28 +2,28 @@ define(['lib/uuid'], (uuid) ->
 
   {
     toggle: ((id) ->
-      tag: 'Toggled'
+      $variant: 'Toggled'
       id: uuid()
       itemId: id
     )
     add: ((content, done) ->
-      tag: 'Added'
+      $variant: 'Added'
       id: uuid()
       itemId: uuid()
       content: content
       done: done
     )
     remove: ((id) ->
-      tag: 'Removed'
+      $variant: 'Removed'
       id: uuid()
       itemId: id
     )
     fold: (event) -> (f) ->
-      if event.tag == 'Toggled'
+      if event.$variant == 'Toggled'
         f.Toggled(event.itemId)
-      else if event.tag == 'Added'
+      else if event.$variant == 'Added'
         f.Added(event.itemId, event.content, event.done)
-      else if event.tag == 'Removed'
+      else if event.$variant == 'Removed'
         f.Removed(event.itemId)
   }
 )

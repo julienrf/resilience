@@ -9,8 +9,6 @@ import scala.concurrent.Future
 
 object Todo extends State with Sync with MongoDBLog with Interpreter with JsonProtocols {
 
-  import protocols.{readEvent, writeEvent}
-
   type Domain = Items
 
   val state = new State(new Items(Nil), e => is => interpreter(e)(is))
