@@ -25,7 +25,6 @@ Olivier Barais\\
        \affaddr{Université de Rennes, France}\\
        \email{jezequel@inria.fr}
 }
-\date{16 March 2014}
 
 \maketitle
 \begin{abstract}
@@ -57,9 +56,9 @@ Achieving resilience can be more or less hard according to the application’s d
 
 In the particular case of collaborative applications, the synchronization step can be challenging: if two clients concurrently change the same resource, how can the server decide which one wins? The more the number of concurrent actions clients can perform without synchronizing to the server, the higher is the risk to be unable to order them.
 
-Our paper presents an architecture pattern based on event sourcing to achieve resilience in Web applications. Our pattern is agnostic to the whole application architecture, it requires little adaptation for existing applications to use it, it only captures and isolates the client-server synchronization process and allows to deliver a good QoE when the network is down. To resolve synchronization conflicts, our pattern can be mixed with either operational transformation or conflict-free replicated data types approaches.
+Our paper presents an architecture pattern based on event sourcing to achieve resilience in Web applications. Our pattern is agnostic to the whole application architecture, it requires little adaptation for existing applications to use it, it only captures and isolates the client-server synchronization process and allows to deliver a good QoE when the network is down. To resolve synchronization conflicts, our architecture can be mixed with either operational transformation or conflict-free replicated data types approaches.
 
-We implemented our pattern as libraries for both server and client sides and used it to develop several use case applications demonstrating the isolation of the resilience concern. We proved the eventual consistency of our synchronization algorithm.
+We implemented libraries for both the server and client sides, intended to be used along with the architecture pattern, and used it to develop several use case applications demonstrating the isolation of the resilience concern. We proved the eventual consistency of our synchronization algorithm.
 
 \section{Related Works}
 
@@ -77,19 +76,33 @@ We implemented our pattern as libraries for both server and client sides and use
 
 \subsection{Architecture}
 
-\begin{figure*}
-\centering
-\includegraphics[width=10cm]{arch-overview.pdf}
-\label{fig-arch-overview}
-\end{figure*}
+Our architecture relies on the idea of event sourcing: the state of the application is determined by the application of a succession of events. For instance, in the case of a text editor, such events could be text insertion and text deletion.
 
 \begin{figure*}
 \centering
-\includegraphics[width=10cm]{arch-detail.pdf}
+\includegraphics[width=11cm]{arch-overview.pdf}
+\label{fig-arch}
 \end{figure*}
 
+Figure \ref{fig-arch} gives a high-level view of our architecture pattern. The application code is partitioned between the client and server sides, with a synchronization module in between.
+
+In order to achieve resilience, when a user triggers an action, the corresponding command is executed on client-side, so it works even if the network is down. The command is also put in a queue, which is periodically synced with the server. When the server acknowledges the application of a command, the client removes it from its queue.
 
 \subsection{Synchronization}
+
+\begin{figure*}
+\centering
+\includegraphics[width=13cm]{arch-detail.pdf}
+\label{fig-sync}
+\end{figure*}
+
+Figure \ref{fig-sync} shows a detailed view of the synchronization module.
+
+Basically, resilience is achieved by executing on client-side the commands logic: users do not have to wait for the server response to have feedback on their actions.
+
+Nevertheless, in the case of a collaborative application, the commands also need to be sent to the server, which is responsible of holding the application state. Clients maintain a queue of commands in which commands are stored while the connection is down. When the connection is back, the queue is sent to the server.
+
+Another parameter to take into account is concurrency: isolated clients can perform actions concurrently. When their commands are sent to the server, what is this one supposed to do if the commands conflict whith each other?
 
 We propose an algorithm to achieve synchronization between clients and server. Web architectures are centralized distributed systems, making it simpler to achieve synchronization than in a completely decentralized system.
 
@@ -97,11 +110,11 @@ Our algorithm uses a logical clock on the server only: each command applied by t
 
 The goal of the synchronization algorithm is to provide eventual consistency between all clients.
 
-Each time a client performs an action, the synchronization component assigns it a unique identifier, appends it into a queue and invokes the corresponding logic, defined by the application. If the network connection is up, the synchronization also tries to send the command to the server along with the timestamp of the last known command applied by the server.
+Each time a client performs an action, the synchronization component assigns it a unique identifier (1), invokes the corresponding logic (2), defined by the application, and appends it into a queue (3). If the network connection is up, the synchronization also tries to send the command to the server along with the timestamp of the last known command applied by the server (4).
 
-When the server receives a synchronization message from a client, consisting of a timestamp of the last known command applied and a command to apply it first checks if the client missed some events and sends them. Then it determines, using the timestamp, the commands that have been applied without being notified to the client, and transforms the commands given in the message according to these missed commands so the effect of their application is intention preserving. The server then applies the transformed commands (by invoking the logic defined by the application), appends them to an event log and associates them a timestamp. Finally, the produced timestamped events are broadcasted to all clients.
+When the server receives a synchronization message from a client, consisting of a timestamp of the last known command applied and a command to apply it first checks if the client missed some events and sends them (5). Then it determines, using the timestamp, the commands that have been applied without being notified to the client, and transforms the commands given in the message according to these missed commands so the effect of their application is intention preserving (6). The server then applies the transformed commands by invoking the logic defined by the application (7, 8), appends them to an event log and associates them a timestamp (9). Finally, the produced timestamped events are broadcasted to all clients (10).
 
-When a client receives a notification message, consisting of a timestamp and an event, it checks if the event corresponds to a command in its queue. If that is the case it just removes the corresponding command from the queue, appends the event to a log and sets the timestamp of the last known command applied by the server to the event timestamp. Otherwise (if the event corresponds to a command initiated by another client), the command logic is invoked on the client after having been transformed according to the commands that have been locally applied but not sent to the server, the event is append to a log and the timestamp of the last known command applied by the server is updated.
+When a client receives a notification message (11), consisting of a timestamp and an event, it checks if the event corresponds to a command in its queue (12). If that is the case it just removes the corresponding command from the queue, appends the event to a log and sets the timestamp of the last known command applied by the server to the event timestamp. Otherwise (if the event corresponds to a command initiated by another client), the command logic is invoked on the client after having been transformed according to the commands that have been locally applied but not sent to the server (13, 14), the event is append to a log and the timestamp of the last known command applied by the server is updated.
 
 \section{Validation}
 
@@ -109,11 +122,23 @@ When a client receives a notification message, consisting of a timestamp and an 
 
 \subsection{Synchronization Algorithm Eventual Consistency}
 
+Our synchronization algorithm must be eventually consistent: the state of all the clients must converge to the same value.
+
+Let $S_{n}$ be the state of the application on the $n^{th}$ client and $S_{s}$ be the state of the application on the server.
+
+Let $run : State \rightarrow Event \rightarrow State$ be a function computing the state resulting of the application of an event on a given state.
+
+Let $converge : Event \rightarrow Event \rightarrow Event$ be a function such that $run\:(run\:s\:e1)\:e2\:=\:run\:(run\:s\:e2)\:(converge\:e1\:e2)$.
+
+The implementation of these functions depends on the application domain, hence they are provided by users.
+
 \subsection{Limitations}
 
 \subsubsection{Data Loading}
 
 \subsubsection{Notifications Personalization}
+
+\subsubsection{Snapshots}
 
 \section{Discussion}
 
