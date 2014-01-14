@@ -3,6 +3,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[unicode=true,hidelinks]{hyperref}
+\usepackage{listings}
 
 \begin{document}
 
@@ -124,13 +125,58 @@ When a client receives a notification message (11), consisting of a timestamp an
 
 Our synchronization algorithm must be eventually consistent: the state of all the clients must converge to the same value.
 
-Let $S_{n}$ be the state of the application on the $n^{th}$ client and $S_{s}$ be the state of the application on the server.
+We define the following variables and functions:
 
-Let $run : State \rightarrow Event \rightarrow State$ be a function computing the state resulting of the application of an event on a given state.
+\begin{itemize}
+ \item $S_{n}$, the state of the application on the $n^{th}$ client, and $S_{s}$, the state of the application on the server~;
+ \item $Q_{n}$, the events queue on the $n^{th}$ client~;
+ \item $t$, a logical clock value stored on the server, starting at 1~;
+ \item $l_{i}$, the last known clock value by client $n^{th}$~;
+ \item $run(S,e)$, a function computing the state resulting of the application of an event $e$ on a given initial state $S$~;
+ \item $converge(e1,e2)$, a function such that $run(run(s,e1),e2)=run(run(s,e2),converge(e1,e2))$. This function makes events application commutative.
+\end{itemize}
 
-Let $converge : Event \rightarrow Event \rightarrow Event$ be a function such that $run\:(run\:s\:e1)\:e2\:=\:run\:(run\:s\:e2)\:(converge\:e1\:e2)$.
+The implementation of the $run$ and $converge$ functions depends on the application domain, hence they are provided by users.
 
-The implementation of these functions depends on the application domain, hence they are provided by users.
+\begin{lstlisting}[mathescape]
+function $handleAction(action)$:
+  $e \leftarrow (action, l_{i})$
+  $S_{i} \leftarrow run(S_{i}, e)$
+  $append(Q_{i}, e)$
+\end{lstlisting}
+
+\begin{lstlisting}[mathescape]
+function $synchronize()$:
+  $sendToServer(Q_{i})$
+\end{lstlisting}
+
+\begin{lstlisting}[mathescape]
+function $onMessage(e, l)$:
+  if $l < t$:
+    for $e'$ in $eventsFrom(l)$:
+      $sendToClient(e')$
+      $e \leftarrow converge(e, e')$
+  $S_{s} \leftarrow run(S_{s})$
+  $t \leftarrow t + 1$
+  $append(log, (e, t))$
+  broadcastToClients((e, t))
+\end{lstlisting}
+
+\begin{lstlisting}[mathescape]
+function $onMessage(e, t)$:
+  if $e \in Q_{i}$:
+    $remove(Q_{i}, e)$
+  else:
+    for $e'$ in $Q_{i}$:
+      $e \leftarrow converge(e, e')$
+    $S_{i} \leftarrow run(S_{i}, e)$
+  -- update log
+  if $t > l_{i}$:
+    $l_{i} \leftarrow t$
+\end{lstlisting}
+
+The pseudo code handling commands emission on client $i$ is given in listing~\ref{lst-handle-action}
+
 
 \subsection{Limitations}
 
@@ -143,5 +189,4 @@ The implementation of these functions depends on the application domain, hence t
 \section{Discussion}
 
 \balancecolumns
-% That's all folks!
 \end{document}
