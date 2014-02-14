@@ -1,0 +1,82 @@
+\documentclass{article}
+
+\usepackage[unicode=true,hidelinks]{hyperref}
+\usepackage{graphicx}
+
+\begin{document}
+
+\title{An Architecture Pattern for Network Resilient Web Applications}
+
+\author{Julien Richard-Foy\\IRISA\\julien@richard-foy.fr}
+
+\maketitle
+
+\begin{abstract}
+With the advent of Internet connected mobile devices having a an intermittent network connection rises the need for a good support of network resilience for Web applications. Achieving resilience requires to resite the application logic execution on client-side when network failures are detected and then to synchronize changes to the server when the connection is back. These failures can happen on each possible user action, making resilience a cross-cutting concern, and therefore making it hard to isolate in the application's code. This paper presents an architecture pattern based on event-sourcing isolating the network resilience concern. Applications built on top of this architecture pattern keep delivering a good quality of experience under bad network conditions. We implemented two example applications and captured the client-server synchronization logic as a reusable library.
+\end{abstract}
+
+\section{Introduction}
+
+Web applications work only as long as the network connection and the server are up. If the network connection or the server is down, applications may suffer from inconsistency, freeze or latency, resulting in a bad user experience. With the advent of Internet connected mobile devices (smartphones and tablets) rises the need for a good support of an off-line mode for Web applications.
+
+In this paper, we use the term \textit{resilience} to refer to the ability of a Web application to deliver a good Quality of Experience (QoE) under bad network conditions. The resilience level can vary. For instance, when an application detects a network failure, it can either:
+
+\begin{itemize}
+ \item Display an error message informing the user that its last action failed (\textit{e.g.} Trello\footnote{\href{http://www.trello.com}{http://www.trello.com}});
+ \item Fallback to a read-only mode (\textit{e.g.} Google Drive\footnote{\href{http://drive.google.com}{http://drive.google.com}});
+ \item Let the user work and try to synchronize the changes when the connection is back (\textit{e.g.} Workflowy\footnote{\href{http://www.workflowy.com}{http://www.workflowy.com}}).
+\end{itemize}
+
+To keep delivering a good QoE when the server is unreachable, the application must resite the business logic on the client-side and then synchronize the changes to the server when the connection comes back. According to the application's domain this task can be more or less hard to achieve. Typically, if the logic needs to access to a large amount of data or to perform a heavy computation, the price to pay may be too high for the client. However, in all other cases the client could take on the business logic execution. Nevertheless, the need for detecting and handling network failures on all user actions makes resilience a cross-cutting concern~\cite{Kiczales97_AOP}, and makes it hard to isolate in the application's code.
+
+This article presents an architecture pattern based on event sourcing to isolate the resilience concern in Web applications. Our pattern is agnostic to the whole application architecture, it requires little adaptation for existing applications to use it, it only captures and isolates the client-server execution distribution policy and allows applications to deliver a good QoE when the network is down.
+
+Based on this architecture pattern we implemented libraries for both the server and client sides, and used it to develop two use case applications demonstrating the isolation of the resilience concern.
+
+\section{Related Work}
+
+\subsection{Offline Support}
+
+\subsection{Persistent Resources}
+
+\subsection{Event-sourcing}
+
+\section{Contribution}
+
+Our architecture relies on the idea of event sourcing: the state of the application is determined by the application of a succession of events. For instance, in the case of a text editor, such events could be text insertion and text deletion. Events are just described by data: \emph{e.g.} the position and the character inserted.
+
+\begin{figure}
+\centering
+\includegraphics[width=8cm]{arch.pdf}
+\label{fig-arch}
+\end{figure}
+
+Figure \ref{fig-arch} depicts the process involved when an user triggers an action in the application. The application code is partitioned between the client and server side, with a synchronization module in between. The left and right parts, in gray, represent the application code, and the central part represents the synchronization module. The process involved when a user triggers an action is the following:
+
+\begin{enumerate}
+ \item A domain event corresponding to the user action is created on the client and sent to the synchronization module~;
+ \item The synchronization module calls back the logic defined by the application for this event~;
+ \item The event is put into an event queue~;
+ \item If the network connection is up, the queue content is sent to the server side part of the synchronization process~;
+ \item The synchronization module invokes the business logic defined by the application for this event~;
+ \item The event is stored in an event log on the server side~;
+ \item The application of the event is acknowledged to the client~;
+ \item The client removes the acknowledged event from its queue.
+\end{enumerate}
+
+With this design, users have an instant feedback for their actions because their logic is executed on client-side.
+
+\section{Validation}
+
+\subsection{TodoMVC application}
+
+\subsection{Notes application}
+
+\subsection{Limitations}
+
+\section{Discussion}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
