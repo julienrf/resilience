@@ -12,16 +12,10 @@ This repository contains server-side and client-side libraries for writing resil
 
 # Run the Samples
 
-First, locally publish the Scala libraries:
+Run sbt, select the sample project you want to test (`sample-todo` or `sample-notes`) and run it:
 
 ```bash
-$ cd src/server
-$ sbt publish-local
-```
-
-Then run a sample:
-
-```bash
-$ cd samples/todo
-$ sbt run
+$ sbt
+> project sample-todo
+[sample-todo] $ run
 ```
