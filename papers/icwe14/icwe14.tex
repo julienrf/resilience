@@ -57,6 +57,8 @@ Event sourcing "captures all changes to an application state as a sequence of ev
 
 Our architecture relies on the idea of event sourcing: the state of the application is determined by the application of a succession of events. For instance, in the case of a text editor, such events could be text insertion and text deletion. Events are just described by data: \emph{e.g.} the position and the character inserted.
 
+Essentially, the idea behind our architecture is to store the events corresponding to each performed action in a queue, on client-side, and to synchronize the queue content when the network connection is up. The business logic corresponding to each event is executed on client-side so users do not suffer from latency when they interact with the application.
+
 \begin{figure}
 \centering
 \includegraphics[width=8cm]{arch.pdf}
