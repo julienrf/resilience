@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass{llncs}
 
 \usepackage[unicode=true,hidelinks]{hyperref}
 \usepackage{graphicx}
@@ -7,12 +7,14 @@
 
 \title{An Architecture Pattern for Network Resilient Web Applications}
 
-\author{Julien Richard-Foy\\IRISA\\julien@richard-foy.fr}
+\author{Julien Richard-Foy\\julien@richard-foy.fr}
+
+\institute{IRISA, Universit\'e de Rennes, France}
 
 \maketitle
 
 \begin{abstract}
-With the advent of Internet connected mobile devices having a an intermittent network connection rises the need for a good support of network resilience for Web applications. Achieving resilience requires to resite the application logic execution on client-side when network failures are detected and then to synchronize changes to the server when the connection is back. These failures can happen on each possible user action, making resilience a cross-cutting concern, and therefore making it hard to isolate in the application's code. This paper presents an architecture pattern based on event-sourcing isolating the network resilience concern. Applications built on top of this architecture pattern keep delivering a good quality of experience under bad network conditions. We implemented two example applications and captured the client-server synchronization logic as a reusable library.
+With the advent of Internet connected mobile devices having a an intermittent network connection rises the need for a good support of network resilience for Web applications. Achieving resilience requires to resite the application logic execution on client-side when network failures are detected and then to synchronize changes to the server when the connection is back. These failures can happen on each possible user action, making resilience a cross-cutting concern, and therefore making it hard to isolate in the application's code. This paper presents an architecture pattern based on event sourcing isolating the network resilience concern. Applications built on top of this architecture pattern keep delivering a good quality of experience under bad network conditions. We implemented two example applications and captured the client-server synchronization logic as a reusable library.
 \end{abstract}
 
 \section{Introduction}
@@ -35,11 +37,21 @@ Based on this architecture pattern we implemented libraries for both the server 
 
 \section{Related Work}
 
+\cite{Zhang10_ElasticMobile}
+
 \subsection{Offline Support}
+
+\cite{Yang2000_OfflineMode}, \cite{Marco11_InterruptionResilience}, \cite{Kao12_WOPRE}.
 
 \subsection{Persistent Resources}
 
-\subsection{Event-sourcing}
+Cannon \emph{et. al.} showed how to get Web application working offline using persistent resources~\cite{Cannon10_Persistence}. This approach is \emph{data centric}: data objects are enhanced with a persistence and synchronization mechanism so that automatically they keep track of their changes and synchronize themselves to a server.
+
+\cite{Benson10_SyncKit}
+
+\subsection{Event sourcing}
+
+Event sourcing "captures all changes to an application state as a sequence of events"~\cite{Fowler05_ES}. Event sourcing is mostly used in conjonction with command and query segregation in order to solve scalability problems~\cite{Betts13_CQRS}.
 
 \section{Contribution}
 
@@ -48,6 +60,7 @@ Our architecture relies on the idea of event sourcing: the state of the applicat
 \begin{figure}
 \centering
 \includegraphics[width=8cm]{arch.pdf}
+\caption{Architecture}
 \label{fig-arch}
 \end{figure}
 
@@ -65,6 +78,22 @@ Figure \ref{fig-arch} depicts the process involved when an user triggers an acti
 \end{enumerate}
 
 With this design, users have an instant feedback for their actions because their logic is executed on client-side.
+
+\begin{figure}
+\centering
+\includegraphics[width=18cm,angle=90]{classes.pdf}
+\caption{Architecture}
+\label{fig-classes}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=12cm]{classes2.pdf}
+\caption{Architecture}
+\label{fig-classes-2}
+\end{figure}
+
+Figures \ref{fig-classes} and \ref{fig-classes-2} show a class diagram of our architecture pattern. Classes in gray are those written by users, classes in white are provided by our library. The application defines the {\tt Event1} and {\tt Event2} domain events and implements the business logic corresponding to their interpretation on client-side and server-side (methods {\tt interprete} of classes {\tt server.AppSync} and {\tt client.AppSync}, respectively). When an user performs an action the {\tt client.Sync\#apply} method is called, which calls back the logic implemented in {\tt client.AppSync.interprete}, put the event in its queue and tries to synchronize the queue to the server. On server-side, the {\tt server.Sync.join()} method is called when a client joins the application, it returns both a sink and a source of events. The sink is used when events are received from a client and the source is used to notify a client that an event has been logged. When an event is pushed to the sink, the {\tt interprete} method is called, applying the business logic corresponding to the event, the event is appended to a log (class {\tt Log}), and pushed back to the client \emph{via} the source. The classes drawn with dotted lines are not part of the architecture pattern, they are given here as an illustration of a possible integration with the whole application. Here, we have a class {\tt State} on server-side, keeping an in-memory state of the system, and classes {\tt Model}, {\tt Ctl} and {\tt View} on client-side, following a kind of model-view-controller pattern.
 
 \section{Validation}
 
