@@ -7,7 +7,7 @@
 
 \begin{document}
 
-\title{An Architecture Pattern for Network Resilient Web Applications}
+\title{An Architecture Pattern for Network Resilient Collaborative Web Applications}
 
 \numberofauthors{3}
 \author{
@@ -130,7 +130,7 @@ We define the following variables and functions:
 \begin{itemize}
  \item $S_{n}$, the state of the application on the $n^{th}$ client, and $S_{s}$, the state of the application on the server~;
  \item $Q_{n}$, the events queue on the $n^{th}$ client~;
- \item $t$, a logical clock value stored on the server, starting at 1~;
+ \item $t$, a logical clock value stored on the server, starting at 0~;
  \item $l_{i}$, the last known clock value by client $n^{th}$~;
  \item $run(S,e)$, a function computing the state resulting of the application of an event $e$ on a given initial state $S$~;
  \item $converge(e1,e2)$, a function such that $run(run(s,e1),e2)=run(run(s,e2),converge(e1,e2))$. This function makes events application commutative.
@@ -175,8 +175,14 @@ function $onMessage(e, t)$:
     $l_{i} \leftarrow t$
 \end{lstlisting}
 
+\begin{figure*}
+\centering
+\includegraphics[width=14cm]{causality.pdf}
+\end{figure*}
+
 The pseudo code handling commands emission on client $i$ is given in listing~\ref{lst-handle-action}
 
+\paragraph{Eventual consistency} Our algorithm is eventually consistent if and only if, the state of the application on all the clients and the server converge. All sites (clients and server) start with the same initial state $S$. When a client performs an action, its state is locally modified to $S'$ according to the effect of the action on the current state. If the network connection is up, the action is sent to the server, which 
 
 \subsection{Limitations}
 
