@@ -51,6 +51,12 @@ Cannon \emph{et. al.} showed how to get Web application working offline using pe
 
 \cite{Benson10_SyncKit}
 
+\paragraph{Computer Supported Collaborative Work}
+
+Lippe \emph{et. al.} distinguish between state-based-merging and operation-based-merging approaches in~\cite{Lippe92_Merging}, and explain their preference for operation-based-merging because it is more fine-grained, giving more opportunities to resolve conflicts.
+
+Operational transformation~\cite{Sun98_OTR}.
+
 \paragraph{Event sourcing}
 
 Event sourcing ``captures all changes to an application state as a sequence of events''~\cite{Fowler05_ES}. Event sourcing is mostly used in conjunction with command and query segregation in order to solve scalability problems~\cite{Betts13_CQRS}.
@@ -99,7 +105,8 @@ With this design, users have an instant feedback for their actions because their
 
 Figure \ref{fig-classes-2} shows a class diagram of our architecture pattern. Classes in gray are those written by users, classes in white are provided by our library and correspond to the white box in figure \ref{fig-arch}.
 
-The application defines the {\tt Event1} and {\tt Event2} domain events and implements the business logic corresponding to their interpretation on client-side and server-side (methods {\tt interprete} of classes {\tt server.AppSync} and {\tt client.AppSync}, respectively). When an user performs an action the {\tt client.Sync\#apply} method is called, which calls back the logic implemented in {\tt client.AppSync.interprete}, put the event in its queue and tries to synchronize the queue to the server. On server-side, the {\tt server.Sync.join()} method is called when a client joins the application, it returns both a sink and a source of events. The sink is used when events are received from a client and the source is used to notify a client that an event has been logged. When an event is pushed to the sink, the {\tt interprete} method is called, applying the business logic corresponding to the event, the event is appended to a log (class {\tt Log}), and pushed back to the client \emph{via} the source. The classes drawn with dotted lines are not part of the architecture pattern, they are given here as an illustration of a possible integration with the whole application. Here, we have a class {\tt State} on server-side, keeping an in-memory state of the system, and classes {\tt Model}, {\tt Ctl} and {\tt View} on client-side, following a kind of model-view-controller pattern.
+The application defines the {\tt Event1} and {\tt Event2} domain events and implements the business logic corresponding to their interpretation on client-side and server-side (methods {\tt interprete} of classes {\tt server.AppSync} and {\tt client.AppSync}, respectively). When an user performs an action the {\tt client.Sync\#apply} method is called, which calls back the logic implemented in {\tt client.AppSync.interprete}, put the event in its queue and tries to synchronize the queue to the server. On server-side, the {\tt server.Sync.join()} method is called when a client joins the application, it returns both a sink and a source of events. The sink is used when events are received from a client and the source is used to notify a client that an event has been logged. When an event is pushed to the sink, the {\tt interprete} method is called, applying the business logic corresponding to the event, the event is appended to a log (class {\tt Log}), and pushed back to the client \emph{via} the source. The 
+classes drawn with dotted lines are not part of the architecture pattern, they are given here as an illustration of a possible integration with the whole application. Here, we have a class {\tt State} on server-side, keeping an in-memory state of the system, and classes {\tt Model}, {\tt Ctl} and {\tt View} on client-side, following a kind of model-view-controller pattern.
 
 \paragraph{Communication between roles}
 
